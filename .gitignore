@@ -10,4 +10,7 @@ __pycache__/
 *.db
 *.db-shm
 *.db-wal
+*.tsbuildinfo
+.pytest_cache/
+.playwright-mcp/
 artifacts/local/

@@ -1,5 +1,7 @@
 # 05 · Model selection & business case
 
+**v0.2 implementation decision:** use `qwen3:8b` through local Ollama for the synthetic classroom prototype, with non-thinking tool selection and server-rendered transactional facts. The 12-case integration smoke run passes, as does the rules baseline. The broader comparative evaluation and production deployment decision remain open; see [implementation status](07-implementation-status.md).
+
 ## Recommendation before benchmarking
 
 Start with managed inference for an open-weight model, conditional on a suitable region, exact-model availability, acceptable retention, latency, and spending controls. Keep a deterministic baseline. Do not buy GPU infrastructure based only on 400 daily queries: that average says little about peak concurrency, token use, utilization, or support burden.

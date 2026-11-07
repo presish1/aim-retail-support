@@ -1,13 +1,45 @@
 # Threadline
 ### Order & returns support, grounded in the order system
 
-**AI in Management · MBA · Scenario A · Definition v0.1 · 7 November 2026**
+**AI in Management · MBA · Scenario A · Working prototype v0.2 · 7 November 2026**
 
 > Recommend a small, supervised AI service that answers routine post-purchase questions using current order records, checks return eligibility with explicit business rules, and hands exceptions to a person with the context attached.
 
-This repository is the **ideation, service design, and architecture package** for an academic consulting assignment. Implementation and model evaluation have not started. “Threadline” is a working concept name; the retailer and all example records are fictional.
+This repository contains the **working local prototype**, service design, and architecture for an academic consulting assignment. It connects Qwen3-8B to an API-backed synthetic order database. “Threadline” is a working concept name; the retailer and all example records are fictional.
 
-![Threadline concept board](design/concept-board.svg)
+## Run the prototype
+
+Requires Node.js 20.19+ or 22.12+, Python 3.11+, and [Ollama](https://ollama.com/). The tested setup uses local Ollama, so no model API key is needed. The Q4 model download is approximately 5.2 GB; check available memory and storage for your machine.
+
+```sh
+git clone https://github.com/presish1/aim-retail-support.git
+cd aim-retail-support
+npm ci
+python3 -m venv .venv
+.venv/bin/python -m pip install -r backend/requirements.lock
+ollama pull qwen3:8b
+npm run dev
+```
+
+Ollama must be running. Open **http://127.0.0.1:5173**. The dev command starts both Vite and FastAPI; orders, sessions, tickets, and traces persist in ignored `artifacts/local/threadline.db`. Use “Restore demo fixtures” in the Order system view to reset the classroom state.
+
+For a built frontend served by FastAPI alone: `npm run build`, then `npm start`, then open `http://127.0.0.1:8000`.
+
+Optional: copy `.env.example` to `.env` to configure another local model or compatible hosted inference endpoint. Environment variables take precedence. Keys stay on the backend; never commit `.env`. Production US processing remains a deployment gate, not a claim about the local classroom demo.
+
+```sh
+npm test
+npm run build
+.venv/bin/python evaluation/run_smoke.py --output artifacts/local/model-smoke.json
+```
+
+**First demo:** track #4812 → change it to Delivered in Order system → save → ask “Can you check again?” → switch the order API off → ask again → create a handoff → inspect Agent inbox. Every response can expose its actual tool proposal, source evidence, mode, token counts, and latency.
+
+The customer selector simulates verification. This application binds to loopback and is a local evaluator studio; its console bootstrap and customer selectors are **not production authentication**. No retailer ERP, WhatsApp account, real customer identity, return-creation API, or refund system is connected.
+
+![Threadline working prototype with a genuine Qwen3-8B order lookup](design/prototype-desktop.png)
+
+The original [concept board](design/concept-board.svg) records the v0.1 design direction.
 
 ## The assignment we are solving
 
@@ -54,6 +86,7 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 | [Prototype specification](docs/04-prototype-specification.md) | What to build next, acceptance criteria, and a five-minute demo |
 | [Models & business case](docs/05-models-and-business-case.md) | Shortlist, selection method, cost assumptions, and owner decision |
 | [Evaluation & handoff](docs/06-evaluation-and-handoff.md) | Test design, pilot gates, ownership, and evidence for the slide team |
+| [Implementation & measured checks](docs/07-implementation-status.md) | What works, the actual model, verification evidence, and limits |
 | [Sources](docs/sources.md) | Primary references checked for the model and deployment discussion |
 | [Demo data](data/README.md) | Six synthetic orders, an illustrative policy, and a fixed demo clock |
 | [Evaluation scenarios](evaluation/scenarios.csv) | Thirty planned checks; no measured results |
@@ -69,8 +102,8 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 
 ## Repository status
 
-**Completed:** definition, ideation, architecture, concept board, synthetic fixtures, evaluation plan.
+**Completed:** the three responsive views, real Qwen3-8B tool selection via Ollama, persistent API-backed order records, source updates, return rules, access boundaries, failure controls, deduplicated handoffs, actual response traces, and a rules baseline.
 
-**Next:** implement the thin vertical slice described in the prototype specification, connect a genuine model, run the evaluation, then capture the evidence for the presentation.
+**Verified locally:** 29 backend tests; 12 focused integration scenarios in each of model and baseline modes; desktop and mobile browser flows. See the [implementation status](docs/07-implementation-status.md) and [recorded smoke run](evaluation/results/local-qwen3-smoke.json). These checks are not a held-out benchmark or proof of production reliability.
 
-No retailer system, WhatsApp account, or model endpoint is connected in this version.
+**Next:** a separate held-out paraphrase/multi-turn evaluation, measured model comparison and cost analysis, then presentation evidence. An actual retailer pilot also needs its real systems, verification, and deployment review.

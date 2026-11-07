@@ -1,6 +1,6 @@
 # Synthetic demo fixtures
 
-All records are fictional and contain no customer contact information. JSON is a seed format for the future database, not the proposed runtime answer source.
+All records are fictional and contain no customer contact information. JSON seeds the implemented SQLite database once; runtime answers read current database records through the backend service. Use the evaluator's “Restore demo fixtures” action to reseed records and clear demo activity.
 
 - `demo-config.json`: fixed demo clock, business timezone, source-health settings.
 - `orders.json`: six orders, including one belonging to a different simulated customer.

@@ -62,7 +62,7 @@ For the prototype, render transactional facts in approved templates. This makes 
 - **Inference:** backend-only adapter to an explicitly configured endpoint; expose model ID and mode in the evaluator trace. A rules baseline is a separate labeled mode.
 - **Hosting:** local laptop for class. Any later public demo uses synthetic records and restricted demo controls. Production hosting requires verified region, access controls, and operational ownership.
 
-These are proposed implementation choices, not installed dependencies or an implemented stack in v0.1.
+These were the v0.1 proposed implementation choices. They are now implemented for the local v0.2 prototype; see [implementation status](07-implementation-status.md) for the actual tool subset, inference setup, verification, and remaining limits.
 
 ## Minimum tool contracts
 
