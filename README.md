@@ -1,21 +1,27 @@
 # Threadline
 ### Order & returns support, grounded in the order system
 
-**AI in Management · MBA · Scenario A · Working prototype v0.3 · 7 November 2026**
+**AI in Management · MBA · Scenario A · Working prototype v0.4 · 7 November 2026**
 
 > Recommend a small, supervised AI service that answers routine post-purchase questions using current order records, checks return eligibility with explicit business rules, and hands exceptions to a person with the context attached.
 
 This repository contains the **working local prototype**, service design, and architecture for an academic consulting assignment. It connects Qwen3-8B to an API-backed synthetic order database. “Threadline” is a working concept name; the retailer and all example records are fictional.
 
+## Retail operations workspace
+
+Open **http://127.0.0.1:5173** for the ERP. It includes searchable order and customer records, order creation, fulfilment editing, payment status, return processing, a support queue, conversation history, and an activity log. All counts reflect the database; no invented performance metrics are displayed.
+
+![Threadline retail operations workspace](design/erp-dashboard.png)
+
 ## WhatsApp customer experience
 
-Open **http://127.0.0.1:5173/whatsapp**, or use **WhatsApp demo** in the studio header to open it in a new tab. The iPhone-style conversation connects through a real WebSocket to the existing AI and order service.
+Open **http://127.0.0.1:5173/whatsapp**, or use **Open customer chat** in the ERP header. This tab contains only the iPhone mockup. Operators manage settings and inspect conversations in the ERP.
 
-Ask “Where is my order?”, then supply **alex@example.com** or **+1 202 555 0147**. Enter the code shown in the local demo verification inbox and choose an active order. No internal customer ID or order number is needed to begin. **casey@example.com** is a second fictional customer for testing access boundaries.
+Ask “Where is my order?”, then supply **alex@example.com**, **+1 202 555 0147**, or **CUS-1001**. The default demo setting matches an existing account directly. An unknown contact gets an explicit account-not-found reply and is not asked for a code. **casey@example.com** is a second fictional customer. Add a new customer and order in the ERP to test a new account end to end.
 
-The demo includes live message acknowledgements, typing state, conversation resume, scoped order-change events, dark mode, and an optional iOS-style keyboard. [Read the channel design, architecture, references, and checks](docs/08-whatsapp-experience.md).
+Saving a selected order's status, carrier estimate, or tracking details sends a source-backed update to its connected customer chat. A subsequent AI request reads the database again. The ERP also refreshes through its own WebSocket when messages or records change. [Read the ERP design and verification notes](docs/09-erp-workspace.md).
 
-![iPhone-style WhatsApp conversation connected to Qwen3-8B and the synthetic order system](design/whatsapp-prototype.png)
+![Phone-only customer conversation](design/whatsapp-phone-only.png)
 
 ## Run the prototype
 
@@ -31,7 +37,7 @@ ollama pull qwen3:8b
 npm run dev
 ```
 
-Ollama must be running. Open **http://127.0.0.1:5173**. The dev command starts both Vite and FastAPI; orders, sessions, tickets, and traces persist in ignored `artifacts/local/threadline.db`. Use “Restore demo fixtures” in the Order system view to reset the classroom state.
+Ollama must be running. The dev command starts both Vite and FastAPI; customers, orders, returns, conversations, tickets, and activity persist in ignored `artifacts/local/threadline.db`. **Settings → Restore sample data** restores 8 fictional customers and 14 orders and clears subsequent demo activity.
 
 For a built frontend served by FastAPI alone: `npm run build`, then `npm start`, then open `http://127.0.0.1:8000`.
 
@@ -43,13 +49,11 @@ npm run build
 .venv/bin/python evaluation/run_smoke.py --output artifacts/local/model-smoke.json
 ```
 
-**First demo:** track #4812 → change it to Delivered in Order system → save → ask “Can you check again?” → switch the order API off → ask again → create a handoff → inspect Agent inbox. Every response can expose its actual tool proposal, source evidence, mode, token counts, and latency.
+**First demo:** open customer chat → ask about an order → use `alex@example.com` → select #4812 → open #4812 in ERP Orders → set Delivered and save → see the order update arrive in chat → ask “Can you check again?” → inspect the conversation and response evidence in ERP Conversations.
 
-The customer selector simulates verification. This application binds to loopback and is a local evaluator studio; its console bootstrap and customer selectors are **not production authentication**. No retailer ERP, WhatsApp account, real customer identity, return-creation API, or refund system is connected.
+The default **Contact match · demo** setting intentionally simplifies identification for a synthetic classroom demo. Optional code verification is available under Settings; its code is visible in ERP Conversations. Neither mode is production authentication. The server binds to loopback. Return and refund records update the synthetic database only; no real payment service, retailer ERP, or WhatsApp account is connected.
 
-![Threadline working prototype with a genuine Qwen3-8B order lookup](design/prototype-desktop.png)
-
-The original [concept board](design/concept-board.svg) records the v0.1 design direction.
+The original [concept board](design/concept-board.svg) and [v0.2 screenshot](design/prototype-desktop.png) remain as design history.
 
 ## The assignment we are solving
 
@@ -98,8 +102,9 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 | [Evaluation & handoff](docs/06-evaluation-and-handoff.md) | Test design, pilot gates, ownership, and evidence for the slide team |
 | [Implementation & measured checks](docs/07-implementation-status.md) | What works, the actual model, verification evidence, and limits |
 | [WhatsApp customer experience](docs/08-whatsapp-experience.md) | Separate iPhone-style chat, WebSocket architecture, account lookup, and UI references |
+| [ERP workspace](docs/09-erp-workspace.md) | Current operations UI, record workflows, live sync, and v0.4 checks |
 | [Sources](docs/sources.md) | Primary references checked for the model and deployment discussion |
-| [Demo data](data/README.md) | Six synthetic orders, an illustrative policy, and a fixed demo clock |
+| [Demo data](data/README.md) | Eight synthetic customers, fourteen sample orders, an illustrative policy, and a fixed demo clock |
 | [Evaluation scenarios](evaluation/scenarios.csv) | Thirty planned checks; no measured results |
 
 ## Decisions made for this first design
@@ -113,8 +118,8 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 
 ## Repository status
 
-**Completed:** the three responsive views, real Qwen3-8B tool selection via Ollama, persistent API-backed order records, source updates, return rules, access boundaries, failure controls, deduplicated handoffs, actual response traces, and a rules baseline.
+**Completed:** operations ERP, phone-only customer channel, Qwen3-8B tool selection, persistent customer/order/return records, live updates, return rules, access boundaries, failure controls, deduplicated support requests, conversation evidence, and a rules baseline.
 
-**Verified locally:** 46 backend tests; 12 focused integration scenarios in each of model and baseline modes; desktop and mobile browser flows; the complete WhatsApp-style customer journey and a cross-tab live source update. See the [implementation status](docs/07-implementation-status.md), [channel notes](docs/08-whatsapp-experience.md), and [recorded v0.2 smoke run](evaluation/results/local-qwen3-smoke.json). These checks are not a held-out benchmark or proof of production reliability.
+**Verified locally:** 66 backend tests, including new ERP and synchronization checks. Browser checks cover unknown-account recovery, creating a customer and order, real Qwen lookup of that purchase, saved order updates delivered to chat, return processing, support assignment, and layouts at 320–1500px. The [recorded v0.2 smoke run](evaluation/results/local-qwen3-smoke.json) is retained as historical integration evidence. These checks are not a held-out benchmark or proof of production reliability.
 
 **Next:** a separate held-out paraphrase/multi-turn evaluation, measured model comparison and cost analysis, then presentation evidence. An actual retailer pilot also needs its real systems, verification, and deployment review.

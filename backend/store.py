@@ -2,6 +2,8 @@
 import json
 import os
 import sqlite3
+import uuid
+from datetime import datetime, timezone
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -21,16 +23,44 @@ class Store:
               CREATE TABLE IF NOT EXISTS traces (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, record TEXT NOT NULL);
               CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, phone TEXT UNIQUE NOT NULL, record TEXT NOT NULL);
               CREATE TABLE IF NOT EXISTS channel_sessions (id TEXT PRIMARY KEY, record TEXT NOT NULL);
+              CREATE TABLE IF NOT EXISTS returns (id TEXT PRIMARY KEY, record TEXT NOT NULL);
+              CREATE TABLE IF NOT EXISTS activity (id TEXT PRIMARY KEY, record TEXT NOT NULL);
             """)
         if self.setting("demo_now") is None:
             self.reset()
         self.seed_customers()
+        if self.setting("erp_samples_v1") is None:
+            for order in json.loads((ROOT / "data/orders.json").read_text()):
+                with self.connect() as db:
+                    db.execute("INSERT OR IGNORE INTO orders VALUES (?,?,?)", (order["order_id"], order["customer_id"], json.dumps(order)))
+            self.set_setting("erp_samples_v1", True)
+        if self.setting("verification_mode") is None:
+            self.set_setting("verification_mode", "demo_match")
+        if self.setting("inference_mode") is None:
+            self.set_setting("inference_mode", "model")
+        for sample in json.loads((ROOT / "data/orders.json").read_text()):
+            record = self.order(sample["order_id"])
+            if not record:
+                continue
+            original = json.dumps(record, sort_keys=True)
+            for key in ("payment_status", "priority", "revision", "notes"):
+                record.setdefault(key, sample.get(key, ""))
+            for item in record["items"]:
+                fixture = next((i for i in sample["items"] if i["item_id"] == item["item_id"]), {})
+                if "unit_price" in fixture:
+                    item.setdefault("unit_price", fixture["unit_price"])
+            if json.dumps(record, sort_keys=True) != original:
+                self.save_order(record)
 
     def seed_customers(self):
         customers = json.loads((ROOT / "data/customers.json").read_text())
         with self.connect() as db:
             for customer in customers:
                 db.execute("INSERT OR IGNORE INTO customers VALUES (?,?,?,?)", (customer["customer_id"], customer["email"].lower(), customer["phone"], json.dumps(customer)))
+                row = db.execute("SELECT record FROM customers WHERE id=?", (customer["customer_id"],)).fetchone()
+                if row:
+                    merged = {**customer, **json.loads(row[0])}
+                    db.execute("UPDATE customers SET record=? WHERE id=?", (json.dumps(merged), customer["customer_id"]))
 
     @contextmanager
     def connect(self):
@@ -50,10 +80,10 @@ class Store:
         policy = json.loads((ROOT / "data/return-policy.json").read_text())
         orders = json.loads((ROOT / "data/orders.json").read_text())
         with self.connect() as db:
-            for table in ("settings", "orders", "tickets", "traces", "customers", "channel_sessions"):
+            for table in ("settings", "orders", "tickets", "traces", "customers", "channel_sessions", "returns", "activity"):
                 db.execute(f"DELETE FROM {table}")  # fixed internal identifiers
             db.execute("UPDATE sessions SET history='[]'")
-            for name, value in {**config, "policy": policy, "ticket_store_available": True}.items():
+            for name, value in {**config, "policy": policy, "ticket_store_available": True, "verification_mode": "demo_match", "inference_mode": "model"}.items():
                 db.execute("INSERT INTO settings VALUES (?,?)", (name, json.dumps(value)))
             for order in orders:
                 db.execute("INSERT INTO orders VALUES (?,?,?)", (order["order_id"], order["customer_id"], json.dumps(order)))
@@ -65,6 +95,11 @@ class Store:
         return json.loads(row[0]) if row else None
 
     def find_customer(self, identifier):
+        identifier = identifier.strip()
+        if identifier.upper().startswith("CUS"):
+            suffix = identifier[3:].lstrip("-")
+            if suffix.isdigit():
+                identifier = "CUS-" + suffix
         normalized = identifier.strip().lower()
         if "@" not in normalized:
             digits = "".join(c for c in normalized if c.isdigit())
@@ -72,7 +107,7 @@ class Store:
                 digits = "1" + digits
             normalized = "+" + digits
         with self.connect() as db:
-            row = db.execute("SELECT record FROM customers WHERE email=? OR phone=?", (normalized, normalized)).fetchone()
+            row = db.execute("SELECT record FROM customers WHERE email=? OR phone=? OR lower(id)=? OR lower(json_extract(record,'$.display_id'))=?", (normalized, normalized, identifier.strip().lower(), identifier.strip().lower())).fetchone()
         return json.loads(row[0]) if row else None
 
     def bind_customer(self, session_id, customer):
@@ -134,6 +169,69 @@ class Store:
         with self.connect() as db:
             rows = db.execute(f"SELECT record FROM {table}" + (" WHERE session_id=?" if session_id else "") + " ORDER BY rowid DESC LIMIT 100", (session_id,) if session_id else ()).fetchall()
         return [json.loads(row[0]) for row in rows]
+
+    def all_records(self, table):
+        assert table in ("customers", "channel_sessions", "returns", "activity")
+        with self.connect() as db:
+            rows = db.execute(f"SELECT record FROM {table} ORDER BY rowid DESC LIMIT 500").fetchall()
+        return [json.loads(row[0]) for row in rows]
+
+    def log(self, entity, entity_id, action, summary, changes=None, actor="Store admin"):
+        entry = {"id": "ACT-" + uuid.uuid4().hex[:10], "at": datetime.now(timezone.utc).isoformat(), "entity": entity, "entity_id": entity_id, "action": action, "summary": summary, "changes": changes or {}, "actor": actor}
+        with self.connect() as db:
+            db.execute("INSERT INTO activity VALUES (?,?)", (entry["id"], json.dumps(entry)))
+        return entry
+
+    def save_customer(self, customer):
+        with self.connect() as db:
+            db.execute("INSERT INTO customers VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,phone=excluded.phone,record=excluded.record", (customer["customer_id"], customer["email"].lower(), customer["phone"], json.dumps(customer)))
+
+    def insert_order(self, order):
+        with self.connect() as db:
+            db.execute("INSERT INTO orders VALUES (?,?,?)", (order["order_id"], order["customer_id"], json.dumps(order)))
+
+    def next_id(self, entity):
+        assert entity in ("orders", "customers", "returns")
+        start = {"orders": 5000, "customers": 1000, "returns": 1000}[entity]
+        prefix = {"orders": "", "customers": "CUS-", "returns": "RMA-"}[entity]
+        with self.connect() as db:
+            values = [r[0] for r in db.execute(f"SELECT id FROM {entity}")]
+            if entity == "customers":
+                values.extend(json.loads(r[0]).get("display_id", "") for r in db.execute("SELECT record FROM customers"))
+        numbers = [int(v.removeprefix(prefix)) for v in values if v.removeprefix(prefix).isdigit()]
+        return prefix + str(max([start, *numbers]) + 1)
+
+    def return_for_item(self, order_id, item_id):
+        return next((r for r in self.all_records("returns") if r["order_id"] == order_id and r["item_id"] == item_id), None)
+
+    def save_return(self, record):
+        with self.connect() as db:
+            db.execute("INSERT OR REPLACE INTO returns VALUES (?,?)", (record["id"], json.dumps(record)))
+
+    def update_ticket(self, ticket):
+        with self.connect() as db:
+            if ticket["status"] == "resolved":
+                db.execute("UPDATE tickets SET record=?, dedup_key=id WHERE id=?", (json.dumps(ticket), ticket["id"]))
+            else:
+                db.execute("UPDATE tickets SET record=? WHERE id=?", (json.dumps(ticket), ticket["id"]))
+
+    def conversation(self, reference):
+        return next((c for c in self.all_records("channel_sessions") if c.get("reference", c["id"][:10]) == reference), None)
+
+    def revise_order(self, order_id, transform, expected_revision=None):
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT record FROM orders WHERE id=?", (order_id,)).fetchone()
+            if not row:
+                raise KeyError(order_id)
+            before = json.loads(row[0])
+            if expected_revision is not None and expected_revision != before.get("revision", 1):
+                raise ValueError("revision_conflict")
+            after = transform(json.loads(row[0]))
+            after["revision"] = before.get("revision", 1) + 1
+            after["source_updated_at"] = datetime.now(timezone.utc).isoformat()
+            db.execute("UPDATE orders SET record=? WHERE id=?", (json.dumps(after), order_id))
+        return before, after
 
     def save_trace(self, trace, session_id):
         with self.connect() as db:

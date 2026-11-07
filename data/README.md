@@ -1,5 +1,7 @@
 # Synthetic demo fixtures
 
+The current seed contains **8 fictional customers and 14 orders**. The six original scenario records below remain the core acceptance fixtures; additional customers and purchases supply useful ERP filtering and workload states. Records created in the ERP persist in the local database until sample data is restored.
+
 All records are fictional and contain no customer contact information. JSON seeds the implemented SQLite database once; runtime answers read current database records through the backend service. Use the evaluator's “Restore demo fixtures” action to reseed records and clear demo activity.
 
 - `demo-config.json`: fixed demo clock, business timezone, source-health settings.

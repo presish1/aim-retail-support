@@ -20,6 +20,14 @@ class ChannelHub:
     def __init__(self):
         self.connections = {}
         self.locks = {}
+        self.admin_connections = set()
+
+    async def studio_changed(self, entity="workspace", entity_id=None):
+        for socket in list(self.admin_connections):
+            try:
+                await socket.send_json({"type": "changed", "entity": entity, "id": entity_id, "at": iso_now()})
+            except (RuntimeError, OSError, WebSocketDisconnect):
+                self.admin_connections.discard(socket)
 
     def add(self, session_id, socket):
         self.connections.setdefault(session_id, set()).add(socket)
@@ -34,7 +42,7 @@ class ChannelHub:
             except (RuntimeError, OSError, WebSocketDisconnect):
                 self.remove(session_id, socket)
 
-    async def source_changed(self, store, order_id=None):
+    async def source_changed(self, store, order_id=None, workflow=None, before=None, notify=False):
         order = store.order(order_id) if order_id else None
         for session_id in list(self.connections):
             session = store.session(session_id)
@@ -43,6 +51,30 @@ class ChannelHub:
             if order and session["customer"] != order["customer_id"]:
                 continue
             await self.emit(session_id, {"type": "source_changed", "order_id": order_id, "at": iso_now()})
+            if not (notify and workflow and order and before):
+                continue
+            changed = any(before.get(key) != order.get(key) for key in ("status", "carrier_eta_date", "carrier", "tracking_reference"))
+            if not changed:
+                continue
+            async with self.locks.setdefault(session_id, asyncio.Lock()):
+                record = store.channel(session_id)
+                if not record or record["stage"] != "verified" or record.get("selected_order") != order_id:
+                    continue
+                try:
+                    fresh = workflow.read_order(session["customer"], order_id)
+                except Exception:
+                    continue
+                text = "*Order update · #" + order_id + "*\n\n" + workflow.status_reply(fresh)["message"]
+                if fresh.get("tracking_reference") and before.get("tracking_reference") != fresh["tracking_reference"]:
+                    text += "\nTracking reference: " + fresh["tracking_reference"]
+                trace = {"id": "run-" + uuid.uuid4().hex[:10], "at": iso_now(), "mode": "system", "model": None, "provider": None, "region": "Local system", "usage": {"input_tokens": 0, "output_tokens": 0}, "latency_ms": 0, "outcome": "ORDER_UPDATED", "note": None, "evidence": fresh, "steps": [{"name": "Read current order", "state": "passed", "detail": "Saved order revision " + str(fresh.get("revision", 1))}, {"name": "Send order update", "state": "passed", "detail": "Source-backed notification; no model inference"}]}
+                message = WhatsAppChannel.bot_message(text, outcome="ORDER_UPDATED")
+                record["messages"].append(message)
+                record["latest_trace"] = trace
+                store.save_channel(record)
+                store.save_trace(trace, session_id)
+                await self.emit(session_id, {"type": "message", "message": message, "stage": record["stage"], "selected_order": order_id})
+        await self.studio_changed("orders", order_id)
 
 
 class WhatsAppChannel:
@@ -55,10 +87,15 @@ class WhatsAppChannel:
 
     def start(self, token=None):
         if token and self.store.channel(token) and self.store.session(token):
-            return self.store.channel(token)
+            record = self.store.channel(token)
+            if record["stage"] == "code" and not record.get("candidate_customer"):
+                record.update(stage="contact", code_hash=None, demo_code=None)
+                record["messages"].append(self.bot_message("I couldn't find a matching customer account. Please check your checkout email or phone number and try again."))
+                self.store.save_channel(record)
+            return record
         token = secrets.token_urlsafe(28)
         self.store.new_session(token, None)
-        record = {"id": token, "stage": "contact", "pending_request": "", "candidate_customer": None,
+        record = {"id": token, "reference": "CON-" + uuid.uuid4().hex[:6].upper(), "created_at": iso_now(), "stage": "contact", "pending_request": "", "candidate_customer": None,
                   "code_hash": None, "demo_code": None, "expires_at": 0, "attempts": 0,
                   "selected_order": None, "choices": [], "latest_trace": None,
                   "messages": [self.bot_message("Hi there! 👋 Welcome to Threadline.\n\nI can help track an order or check a return. What can I help you with today?")]}
@@ -71,13 +108,19 @@ class WhatsAppChannel:
         return {"type": "session", "session_id": record["id"], "stage": record["stage"],
                 "messages": [{k: v for k, v in m.items() if k != "handled"} for m in record["messages"]],
                 "customer_name": customer["first_name"] if customer else None,
-                "selected_order": record["selected_order"], "latest_trace": record["latest_trace"]}
+                "selected_order": record["selected_order"]}
 
     @staticmethod
     def identifier(text):
+        customer_id = re.search(r"\b(?:CUS-?\d{4,}|demo-customer-[ab])\b", text, re.I)
+        if customer_id:
+            return customer_id[0]
         email = re.search(r"[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}", text, re.I)
         if email:
             return email[0]
+        international = re.search(r"\+\d[\d ().\-]{7,22}\d", text)
+        if international and 10 <= len(re.sub(r"\D", "", international[0])) <= 15:
+            return international[0]
         phone = re.search(r"(?<!\w)(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}(?!\d)", text)
         return phone[0] if phone else None
 
@@ -87,6 +130,9 @@ class WhatsAppChannel:
 
     def challenge(self, record, identifier):
         customer = self.store.find_customer(identifier)
+        if not customer:
+            record.update(stage="contact", candidate_customer=None, code_hash=None, demo_code=None, expires_at=0, attempts=0)
+            return "I couldn't find a customer account with those details. Please check the email or phone number you used at checkout, or send your customer ID."
         code = f"{secrets.randbelow(1000000):06d}"
         record.update(stage="code", candidate_customer=customer["customer_id"] if customer else None,
                       code_hash=self.code_digest(code), demo_code=code if customer else None,
@@ -115,6 +161,7 @@ class WhatsAppChannel:
                 existing = {"id": client_id, "role": "user", "text": text, "at": iso_now(), "handled": False}
                 record["messages"].append(existing)
                 self.store.save_channel(record)
+                await self.hub.studio_changed("conversations", record.get("reference"))
             await self.hub.emit(session_id, {"type": "ack", "id": client_id, "at": existing["at"]})
             await self.hub.emit(session_id, {"type": "typing", "active": True, "stage": "understanding"})
             try:
@@ -126,8 +173,9 @@ class WhatsAppChannel:
                 existing["handled"] = True
                 record["messages"] = record["messages"][-120:]
                 self.store.save_channel(record)
+                await self.hub.studio_changed("conversations", record.get("reference"))
                 await self.hub.emit(session_id, {"type": "message", "message": message, "stage": record["stage"],
-                                                 "latest_trace": record["latest_trace"], "selected_order": record["selected_order"],
+                                                 "selected_order": record["selected_order"],
                                                  "customer_name": self.snapshot(record)["customer_name"]})
             except Exception:
                 # Leave the request unhandled so a reconnect can retry with its original ID.
@@ -138,17 +186,26 @@ class WhatsAppChannel:
     async def respond(self, record, text, mode):
         record["latest_trace"] = None
         identifier = self.identifier(text)
+        if identifier and record["stage"] in ("verified", "choose_order"):
+            record.update(stage="contact", selected_order=None, choices=[], pending_request="Where is my order?")
+            self.store.bind_customer(record["id"], None)
         if record["stage"] == "contact":
             if identifier:
                 remainder = text.replace(identifier, "").strip(" \n,.;:")
                 if re.search(r"\b(order|return|track|parcel|delivery|size|damaged|refund)\b", remainder, re.I):
                     record["pending_request"] = remainder
+                customer = self.store.find_customer(identifier)
+                if customer and self.store.setting("verification_mode") == "demo_match":
+                    return await self.complete_match(record, customer, mode, "demo_contact_match")
                 return self.challenge(record, identifier)
             record["pending_request"] = text
             return "Of course — what email address or mobile number did you use at checkout? I'll use it to find your orders."
 
         if record["stage"] == "code":
             if identifier:
+                customer = self.store.find_customer(identifier)
+                if customer and self.store.setting("verification_mode") == "demo_match":
+                    return await self.complete_match(record, customer, mode, "demo_contact_match")
                 return self.challenge(record, identifier)
             if time.time() > record["expires_at"] or record["attempts"] >= 5:
                 record.update(stage="contact", demo_code=None, code_hash=None, candidate_customer=None)
@@ -158,23 +215,15 @@ class WhatsAppChannel:
             correct = supplied and hmac.compare_digest(self.code_digest(supplied[1]), record["code_hash"] or "")
             if not correct or not record["candidate_customer"]:
                 return "I couldn't verify that code. Please try again, or send the checkout email or phone number again."
-            self.store.bind_customer(record["id"], record["candidate_customer"])
-            record.update(stage="verified", demo_code=None, code_hash=None, expires_at=0, attempts=0)
-            question = record["pending_request"] or "Where is my order?"
-            if re.fullmatch(r"\s*(hi|hello|hey|hi there|hello there)[!. 👋]*\s*", question, re.I):
-                question = "Where is my order?"
-            record["pending_request"] = question
-            result = await self.route_verified(record, question, mode)
-            customer = self.store.customer(self.store.session(record["id"])["customer"])
-            if isinstance(result, str):
-                return f"Thanks, {customer['first_name']} — you're verified. ✅\n\n" + result
-            result["text"] = f"Thanks, {customer['first_name']} — you're verified. ✅\n\n" + result["text"]
-            return result
+            return await self.complete_match(record, self.store.customer(record["candidate_customer"]), mode, "demo_code")
 
         if record["stage"] == "choose_order":
             choices = record["choices"]
             number = re.fullmatch(r"\s*(\d)\s*", text)
             explicit = self.workflow.explicit_order(text)
+            if re.search(r"\b(support|person|agent|human|refund|cancel|address|damaged|faulty)\b", text, re.I):
+                record["stage"] = "verified"
+                return await self.run_workflow(record, text, mode)
             if number and 0 < int(number[1]) <= len(choices):
                 explicit = choices[int(number[1]) - 1]
             if explicit:
@@ -188,15 +237,30 @@ class WhatsAppChannel:
         if re.fullmatch(r"\s*(thank(s| you)( so much)?|great|perfect|awesome)[!. 🙏]*\s*", text, re.I):
             return "You're very welcome! 😊 Message us any time you need help with your order."
         if re.fullmatch(r"\s*\d{6}\s*", text):
-            return "You're already verified. What would you like to know about your order?"
+            return "Your account is already connected. What would you like to know about your order?"
         return await self.route_verified(record, text, mode)
+
+    async def complete_match(self, record, customer, mode, method):
+        self.store.bind_customer(record["id"], customer["customer_id"])
+        record.update(stage="verified", verification_method=method, candidate_customer=customer["customer_id"], demo_code=None, code_hash=None, expires_at=0, attempts=0)
+        question = record["pending_request"] or "Where is my order?"
+        if re.fullmatch(r"\s*(hi|hello|hey|hi there|hello there)[!. 👋]*\s*", question, re.I):
+            question = "Where is my order?"
+        record["pending_request"] = question
+        self.store.log("customer", customer["customer_id"], "matched", f"{customer['first_name']} matched in WhatsApp", actor="Customer channel")
+        result = await self.route_verified(record, question, mode)
+        prefix = f"Thanks, {customer['first_name']}. I found your account.\n\n"
+        if isinstance(result, str):
+            return prefix + result
+        result["text"] = prefix + result["text"]
+        return result
 
     async def route_verified(self, record, text, mode):
         session = self.store.session(record["id"])
         if not session or not session["customer"]:
             record["stage"] = "contact"
             return "Let's reconnect your account. What email address or mobile number did you use at checkout?"
-        if re.search(r"\b(support|person|agent|human|refund|address|damaged|faulty|cancel)\b", text, re.I):
+        if re.search(r"\b(support|person|agent|human|refund|address|damaged|faulty|cancel)\b", text, re.I) and not self.workflow.is_return_status(text):
             return await self.run_workflow(record, text, mode)
         explicit = self.workflow.explicit_order(text)
         if explicit or record["selected_order"]:
@@ -207,7 +271,7 @@ class WhatsAppChannel:
         if self.store.setting("feed_health") != "healthy":
             return {"text": "Our delivery feed is delayed. I can't confirm the latest order details right now. Support can help check.", "actions": [{"label": "Contact support", "text": "Please contact support about my order."}]}
         owned = self.store.orders(session["customer"])
-        returns = re.search(r"return|size|too (big|small)|send.*back", text, re.I)
+        returns = re.search(r"return|refund|size|too (big|small)|send.*back", text, re.I)
         named = [o for o in owned if any(any(w in text.lower() for w in i["name"].lower().split() if len(w) > 4) for i in o["items"])]
         candidates = named or ([o for o in owned if o["status"] not in ("delivered", "cancelled")] if not returns else owned)
         candidates = candidates or owned

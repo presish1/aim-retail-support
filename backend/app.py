@@ -15,15 +15,37 @@ from .model import ModelAdapter
 from .service import SourceError, Workflow, iso_now
 from .store import ROOT, Store
 from .whatsapp import ChannelHub, WhatsAppChannel
+from . import erp
 
 
-app = FastAPI(title="Threadline synthetic support API", version="0.3.0")
+app = FastAPI(title="Threadline synthetic support API", version="0.4.0")
 store = Store()
 adapter = ModelAdapter()
 workflow = Workflow(store, adapter)
 admin_key = secrets.token_urlsafe(32)
 session_locks = {}
 channel_hub = ChannelHub()
+
+
+@app.websocket("/api/studio/ws")
+async def studio_socket(socket: WebSocket):
+    if urlparse(socket.headers.get("origin", "")).hostname not in ("localhost", "127.0.0.1", "::1"):
+        await socket.close(code=1008)
+        return
+    await socket.accept()
+    try:
+        hello = await asyncio.wait_for(socket.receive_json(), 10)
+        if not isinstance(hello, dict) or not secrets.compare_digest(str(hello.get("key", "")), admin_key):
+            await socket.close(code=1008)
+            return
+        channel_hub.admin_connections.add(socket)
+        await socket.send_json({"type": "ready"})
+        while True:
+            await socket.receive_text()
+    except (WebSocketDisconnect, RuntimeError, asyncio.TimeoutError, ValueError):
+        pass
+    finally:
+        channel_hub.admin_connections.discard(socket)
 
 
 @app.websocket("/api/whatsapp/ws")
@@ -48,6 +70,7 @@ async def whatsapp_socket(socket: WebSocket):
         session_id = record["id"]
         channel_hub.add(session_id, socket)
         await socket.send_json(channel.snapshot(record))
+        await channel_hub.studio_changed("conversations", record.get("reference"))
         while True:
             event = await socket.receive_json()
             if not isinstance(event, dict):
@@ -58,7 +81,7 @@ async def whatsapp_socket(socket: WebSocket):
                 if not isinstance(text, str) or not text.strip() or len(text) > 2000 or not isinstance(client_id, str) or not 8 <= len(client_id) <= 80:
                     await socket.send_json({"type": "error", "message": "Message must contain 1–2,000 characters and a valid request ID."})
                     continue
-                mode = event.get("mode", "model")
+                mode = event.get("mode", store.setting("inference_mode") or "model")
                 if mode not in ("model", "baseline"):
                     await socket.send_json({"type": "error", "message": "Unknown request mode."})
                     continue
@@ -69,6 +92,7 @@ async def whatsapp_socket(socket: WebSocket):
                 session_id = record["id"]
                 channel_hub.add(session_id, socket)
                 await socket.send_json(channel.snapshot(record))
+                await channel_hub.studio_changed("conversations", record.get("reference"))
             elif event.get("type") == "ping":
                 await socket.send_json({"type": "pong"})
             else:
@@ -126,15 +150,12 @@ class ChatBody(StrictBody):
     mode: Literal["model", "baseline"] = "model"
 
 
-class OrderUpdate(StrictBody):
-    status: Literal["processing", "in_transit", "delivered", "partially_delivered", "cancelled"]
-    carrier_eta_date: str | None = None
-
-
 class Controls(StrictBody):
     order_api_available: bool | None = None
     feed_health: Literal["healthy", "lagging"] | None = None
     ticket_store_available: bool | None = None
+    verification_mode: Literal["demo_match", "code"] | None = None
+    inference_mode: Literal["model", "baseline"] | None = None
 
 
 @app.get("/api/health")
@@ -190,48 +211,34 @@ def bootstrap():
 
 @app.get("/api/studio/state", dependencies=[Depends(require_admin)])
 def studio_state():
-    return {"orders": store.orders(), "settings": store.settings(), "tickets": store.records("tickets"), "traces": store.records("traces")}
+    return erp.state(store)
 
 
 @app.patch("/api/studio/orders/{order_id}", dependencies=[Depends(require_admin)])
-async def update_order(order_id: str, body: OrderUpdate):
-    order = store.order(order_id)
-    if not order:
-        raise HTTPException(404, "No such synthetic order.")
-    if body.carrier_eta_date:
-        from datetime import date
-        try:
-            date.fromisoformat(body.carrier_eta_date)
-        except ValueError:
-            raise HTTPException(422, "ETA must be an ISO calendar date.")
-    order["status"] = body.status
-    order["carrier_eta_date"] = body.carrier_eta_date if body.status != "delivered" else None
-    order["source_updated_at"] = store.setting("demo_now")
-    for item in order["items"]:
-        if body.status == "delivered":
-            item["status"] = "delivered"
-            item["delivered_at"] = item["delivered_at"] or store.setting("demo_now")
-        elif body.status in ("in_transit", "processing", "cancelled"):
-            item["status"] = body.status
-            item["delivered_at"] = None
-    store.save_order(order)
-    await channel_hub.source_changed(store, order_id)
-    return {"order": order, "saved_at": iso_now(), "source": "SQLite"}
+async def update_order(order_id: str, body: erp.OrderPatch):
+    return await erp.update_order(store, workflow, channel_hub, order_id, body)
 
 
 @app.patch("/api/studio/controls", dependencies=[Depends(require_admin)])
 async def controls(body: Controls):
     for key, value in body.model_dump(exclude_none=True).items():
         store.set_setting(key, value)
+    store.log("settings", "workspace", "updated", "Workspace settings updated", body.model_dump(exclude_none=True))
     await channel_hub.source_changed(store)
     return {"settings": store.settings()}
 
 
 @app.post("/api/studio/reset", dependencies=[Depends(require_admin)])
-def reset():
+async def reset():
     store.reset()
+    for session_id in list(channel_hub.connections):
+        await channel_hub.emit(session_id, {"type": "reset_required"})
+    store.log("workspace", "samples", "restored", "Sample data restored")
+    await channel_hub.studio_changed()
     return {"ok": True, "demo_now": store.setting("demo_now")}
 
+
+erp.register(app, lambda: store, lambda: workflow, lambda: channel_hub, require_admin)
 
 dist = ROOT / "dist"
 if dist.exists():

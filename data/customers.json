@@ -4,13 +4,95 @@
     "first_name": "Alex",
     "email": "alex@example.com",
     "phone": "+12025550147",
-    "synthetic": true
+    "synthetic": true,
+    "display_id": "CUS-1001",
+    "last_name": "Morgan",
+    "city": "Austin, TX",
+    "created_at": "2026-09-12T10:00:00Z",
+    "notes": ""
   },
   {
     "customer_id": "demo-customer-b",
     "first_name": "Casey",
     "email": "casey@example.com",
     "phone": "+12025550186",
+    "synthetic": true,
+    "display_id": "CUS-1002",
+    "last_name": "Reed",
+    "city": "Seattle, WA",
+    "created_at": "2026-09-12T10:00:00Z",
+    "notes": ""
+  },
+  {
+    "customer_id": "CUS-1003",
+    "display_id": "CUS-1003",
+    "first_name": "Morgan",
+    "last_name": "Lee",
+    "email": "morgan@example.com",
+    "phone": "+12025550121",
+    "city": "Portland, OR",
+    "created_at": "2026-10-15T11:00:00Z",
+    "notes": "",
+    "synthetic": true
+  },
+  {
+    "customer_id": "CUS-1004",
+    "display_id": "CUS-1004",
+    "first_name": "Jordan",
+    "last_name": "Parker",
+    "email": "jordan@example.com",
+    "phone": "+12025550122",
+    "city": "Denver, CO",
+    "created_at": "2026-10-15T11:00:00Z",
+    "notes": "",
+    "synthetic": true
+  },
+  {
+    "customer_id": "CUS-1005",
+    "display_id": "CUS-1005",
+    "first_name": "Sam",
+    "last_name": "Rivera",
+    "email": "sam@example.com",
+    "phone": "+12025550123",
+    "city": "Chicago, IL",
+    "created_at": "2026-10-15T11:00:00Z",
+    "notes": "",
+    "synthetic": true
+  },
+  {
+    "customer_id": "CUS-1006",
+    "display_id": "CUS-1006",
+    "first_name": "Taylor",
+    "last_name": "Brooks",
+    "email": "taylor@example.com",
+    "phone": "+12025550124",
+    "city": "Boston, MA",
+    "created_at": "2026-10-15T11:00:00Z",
+    "notes": "",
+    "synthetic": true
+  },
+  {
+    "customer_id": "CUS-1007",
+    "display_id": "CUS-1007",
+    "first_name": "Riley",
+    "last_name": "Chen",
+    "email": "riley@example.com",
+    "phone": "+12025550125",
+    "city": "San Diego, CA",
+    "created_at": "2026-10-15T11:00:00Z",
+    "notes": "",
+    "synthetic": true
+  },
+  {
+    "customer_id": "CUS-1008",
+    "display_id": "CUS-1008",
+    "first_name": "Jamie",
+    "last_name": "Cole",
+    "email": "jamie@example.com",
+    "phone": "+12025550126",
+    "city": "New York, NY",
+    "created_at": "2026-10-15T11:00:00Z",
+    "notes": "",
     "synthetic": true
   }
 ]

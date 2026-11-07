@@ -18,14 +18,19 @@
         "final_sale": false,
         "returned": false,
         "size": "M",
-        "color": "Forest"
+        "color": "Forest",
+        "unit_price": 78
       }
     ],
     "ordered_at": "2026-11-05T15:20:00Z",
     "order_total": 78.0,
     "currency": "USD",
     "shipping_city": "Austin, TX",
-    "tracking_reference": "DEMO4812US"
+    "tracking_reference": "DEMO4812US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
   },
   {
     "order_id": "4813",
@@ -46,14 +51,19 @@
         "final_sale": false,
         "returned": false,
         "size": "M",
-        "color": "White"
+        "color": "White",
+        "unit_price": 64
       }
     ],
     "ordered_at": "2026-10-22T14:00:00Z",
     "order_total": 64.0,
     "currency": "USD",
     "shipping_city": "Austin, TX",
-    "tracking_reference": "DEMO4813US"
+    "tracking_reference": "DEMO4813US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
   },
   {
     "order_id": "4814",
@@ -74,14 +84,19 @@
         "final_sale": false,
         "returned": false,
         "size": "32",
-        "color": "Stone"
+        "color": "Stone",
+        "unit_price": 72
       }
     ],
     "ordered_at": "2026-09-28T15:00:00Z",
     "order_total": 72.0,
     "currency": "USD",
     "shipping_city": "Austin, TX",
-    "tracking_reference": "DEMO4814US"
+    "tracking_reference": "DEMO4814US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
   },
   {
     "order_id": "4815",
@@ -102,14 +117,19 @@
         "final_sale": true,
         "returned": false,
         "size": "M",
-        "color": "Ink"
+        "color": "Ink",
+        "unit_price": 28
       }
     ],
     "ordered_at": "2026-10-30T14:00:00Z",
     "order_total": 28.0,
     "currency": "USD",
     "shipping_city": "Austin, TX",
-    "tracking_reference": "DEMO4815US"
+    "tracking_reference": "DEMO4815US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
   },
   {
     "order_id": "4816",
@@ -130,7 +150,8 @@
         "final_sale": false,
         "returned": false,
         "size": "M",
-        "color": "Oat"
+        "color": "Oat",
+        "unit_price": 88
       },
       {
         "item_id": "4816-2",
@@ -141,14 +162,19 @@
         "final_sale": false,
         "returned": false,
         "size": "M",
-        "color": "Navy"
+        "color": "Navy",
+        "unit_price": 96
       }
     ],
     "ordered_at": "2026-11-01T16:00:00Z",
     "order_total": 184.0,
     "currency": "USD",
     "shipping_city": "Austin, TX",
-    "tracking_reference": "DEMO4816US"
+    "tracking_reference": "DEMO4816US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
   },
   {
     "order_id": "4901",
@@ -169,13 +195,294 @@
         "final_sale": false,
         "returned": false,
         "size": "L",
-        "color": "Olive"
+        "color": "Olive",
+        "unit_price": 112
       }
     ],
     "ordered_at": "2026-11-02T17:00:00Z",
     "order_total": 112.0,
     "currency": "USD",
     "shipping_city": "Seattle, WA",
-    "tracking_reference": "DEMO4901US"
+    "tracking_reference": "DEMO4901US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
+  },
+  {
+    "order_id": "4817",
+    "customer_id": "CUS-1003",
+    "policy_version": "demo-returns-v1",
+    "status": "processing",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-06T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4817-1",
+        "name": "Everyday Oxford",
+        "quantity": 1,
+        "status": "processing",
+        "delivered_at": null,
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "White",
+        "unit_price": 64
+      }
+    ],
+    "ordered_at": "2026-11-04T14:30:00Z",
+    "order_total": 64.0,
+    "currency": "USD",
+    "shipping_city": "Portland, OR",
+    "tracking_reference": "",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
+  },
+  {
+    "order_id": "4818",
+    "customer_id": "CUS-1004",
+    "policy_version": "demo-returns-v1",
+    "status": "in_transit",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": "2026-11-06",
+    "source_updated_at": "2026-11-06T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4818-1",
+        "name": "Weekday Hoodie",
+        "quantity": 1,
+        "status": "in_transit",
+        "delivered_at": null,
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "Forest",
+        "unit_price": 78
+      }
+    ],
+    "ordered_at": "2026-11-04T14:30:00Z",
+    "order_total": 78.0,
+    "currency": "USD",
+    "shipping_city": "Denver, CO",
+    "tracking_reference": "DEMO4818US",
+    "payment_status": "paid",
+    "priority": "high",
+    "revision": 1,
+    "notes": ""
+  },
+  {
+    "order_id": "4819",
+    "customer_id": "CUS-1005",
+    "policy_version": "demo-returns-v1",
+    "status": "delivered",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-06T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4819-1",
+        "name": "Utility Jacket",
+        "quantity": 1,
+        "status": "delivered",
+        "delivered_at": "2026-11-05T15:00:00Z",
+        "final_sale": false,
+        "returned": false,
+        "size": "L",
+        "color": "Olive",
+        "unit_price": 112
+      }
+    ],
+    "ordered_at": "2026-11-04T14:30:00Z",
+    "order_total": 112.0,
+    "currency": "USD",
+    "shipping_city": "Chicago, IL",
+    "tracking_reference": "DEMO4819US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
+  },
+  {
+    "order_id": "4820",
+    "customer_id": "CUS-1006",
+    "policy_version": "demo-returns-v1",
+    "status": "processing",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-06T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4820-1",
+        "name": "Straight-leg Chino",
+        "quantity": 1,
+        "status": "processing",
+        "delivered_at": null,
+        "final_sale": false,
+        "returned": false,
+        "size": "32",
+        "color": "Stone",
+        "unit_price": 72
+      }
+    ],
+    "ordered_at": "2026-11-04T14:30:00Z",
+    "order_total": 72.0,
+    "currency": "USD",
+    "shipping_city": "Boston, MA",
+    "tracking_reference": "",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
+  },
+  {
+    "order_id": "4821",
+    "customer_id": "CUS-1007",
+    "policy_version": "demo-returns-v1",
+    "status": "in_transit",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": "2026-11-10",
+    "source_updated_at": "2026-11-06T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4821-1",
+        "name": "Ribbed Cardigan",
+        "quantity": 1,
+        "status": "in_transit",
+        "delivered_at": null,
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "Oat",
+        "unit_price": 88
+      },
+      {
+        "item_id": "4821-2",
+        "name": "Canvas Overshirt",
+        "quantity": 1,
+        "status": "in_transit",
+        "delivered_at": null,
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "Navy",
+        "unit_price": 96
+      }
+    ],
+    "ordered_at": "2026-11-04T14:30:00Z",
+    "order_total": 184.0,
+    "currency": "USD",
+    "shipping_city": "San Diego, CA",
+    "tracking_reference": "DEMO4821US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
+  },
+  {
+    "order_id": "4822",
+    "customer_id": "CUS-1008",
+    "policy_version": "demo-returns-v1",
+    "status": "delivered",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-06T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4822-1",
+        "name": "Everyday Oxford",
+        "quantity": 1,
+        "status": "delivered",
+        "delivered_at": "2026-11-05T15:00:00Z",
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "White",
+        "unit_price": 64
+      }
+    ],
+    "ordered_at": "2026-11-04T14:30:00Z",
+    "order_total": 64.0,
+    "currency": "USD",
+    "shipping_city": "New York, NY",
+    "tracking_reference": "DEMO4822US",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
+  },
+  {
+    "order_id": "4823",
+    "customer_id": "CUS-1004",
+    "policy_version": "demo-returns-v1",
+    "status": "processing",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-06T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4823-1",
+        "name": "Weekday Hoodie",
+        "quantity": 1,
+        "status": "processing",
+        "delivered_at": null,
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "Forest",
+        "unit_price": 78
+      }
+    ],
+    "ordered_at": "2026-11-04T14:30:00Z",
+    "order_total": 78.0,
+    "currency": "USD",
+    "shipping_city": "Denver, CO",
+    "tracking_reference": "",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
+  },
+  {
+    "order_id": "4824",
+    "customer_id": "CUS-1003",
+    "policy_version": "demo-returns-v1",
+    "status": "cancelled",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-06T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4824-1",
+        "name": "Archive Tee",
+        "quantity": 1,
+        "status": "cancelled",
+        "delivered_at": null,
+        "final_sale": true,
+        "returned": false,
+        "size": "M",
+        "color": "Ink",
+        "unit_price": 28
+      }
+    ],
+    "ordered_at": "2026-11-04T14:30:00Z",
+    "order_total": 28.0,
+    "currency": "USD",
+    "shipping_city": "Portland, OR",
+    "tracking_reference": "",
+    "payment_status": "paid",
+    "priority": "normal",
+    "revision": 1,
+    "notes": ""
   }
 ]

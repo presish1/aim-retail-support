@@ -24,6 +24,7 @@ class OfflineModel:
 @pytest.fixture
 def channel_system(tmp_path):
     store = Store(tmp_path / "whatsapp.db")
+    store.set_setting("verification_mode", "code")
     workflow = Workflow(store, OfflineModel())
     hub = ChannelHub()
     return store, workflow, hub, WhatsAppChannel(store, workflow, hub)
@@ -136,14 +137,16 @@ def test_expired_challenge_cannot_bind_identity(channel_system):
     assert record["stage"] == "contact" and store.session(record["id"])["customer"] is None
 
 
-def test_unknown_contact_has_same_public_challenge(channel_system):
+def test_unknown_contact_returns_not_found_without_challenge(channel_system):
     _, _, _, channel = channel_system
     known = send(channel_system, channel.start(), "alex@example.com")
     unknown = send(channel_system, channel.start(), "nobody@example.com")
-    assert known["messages"][-1]["text"] == unknown["messages"][-1]["text"]
+    assert known["stage"] == "code"
+    assert "couldn't find a customer account" in unknown["messages"][-1]["text"]
+    assert unknown["stage"] == "contact"
     assert unknown["demo_code"] is None and unknown["candidate_customer"] is None
     failed = send(channel_system, unknown, "123456")
-    assert failed["stage"] == "code"
+    assert failed["stage"] == "contact"
 
 
 def test_cross_customer_order_is_still_denied_after_verification(channel_system):

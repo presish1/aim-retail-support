@@ -42,7 +42,9 @@ class Workflow:
     def baseline(self, message, context, history):
         text = message.lower()
         order_id = self.explicit_order(message) or context.get("order_id", "")
-        if re.search(r"\b(agent|human|person|support|review|refund|cancel|address|damag\w*|faulty|broken)\b", text):
+        if self.is_return_status(text):
+            name = "check_return_eligibility"
+        elif re.search(r"\b(agent|human|person|support|review|refund|cancel|address|damag\w*|faulty|broken)\b", text):
             name = "create_support_ticket"
         elif re.search(r"\b(return\w*|send\s+\w*\s*back|too (big|small)|size|tags?|unworn|worn|deadline|eligible|eligibility)\b", text):
             name = "check_return_eligibility"
@@ -57,6 +59,10 @@ class Workflow:
         return {"name": name, "arguments": {"order_id": order_id}, "usage": {"input_tokens": 0, "output_tokens": 0}}
 
     @staticmethod
+    def is_return_status(text):
+        return bool(re.search(r"refund\s+(?:status|update)|(?:where|when|has|check|status|update).*\brefund\b|return\s+status|status.*\breturn\b", text, re.I))
+
+    @staticmethod
     def explicit_order(message):
         match = re.search(r"(?<!\d)(\d{4})(?:-\d+)?(?!\d)", message)
         return match[1] if match else ""
@@ -64,6 +70,11 @@ class Workflow:
     def return_result(self, order, item, customer_words):
         customer_words = customer_words.replace("never worn", "unworn")
         policy = self.store.setting("policy")
+        existing = self.store.return_for_item(order["order_id"], item["item_id"])
+        if existing:
+            summaries = {"requested": "is awaiting review", "approved": "has been approved", "declined": "was declined", "received": "has been received by the store", "refunded": "has a refund recorded in the order system"}
+            message = f"Return {existing['id']} for {item['name']} {summaries[existing['status']]}."
+            return {"decision": "existing_return", "reason": "Return " + existing["status"], "message": message, "policy_version": order["policy_version"], "return_id": existing["id"], "return_status": existing["status"], "deadline": None, "item_id": item["item_id"], "item_name": item["name"]}
         if order["policy_version"] != policy["version"]:
             return {"decision": "review_required", "reason": "Policy version unavailable", "message": "I can't verify which return policy applies to this purchase. Support needs to review it.", "policy_version": order["policy_version"]}
         result = {"policy_version": policy["version"], "deadline": None, "item_id": item["item_id"], "item_name": item["name"]}
@@ -120,7 +131,8 @@ class Workflow:
                 if exc.code == "INACCESSIBLE_ORDER":
                     return {"message": exc.message, "outcome": exc.code, "card": None, "actions": []}
                 failure = exc.code
-        words = " ".join(m["content"] for m in history[-8:] if m["role"] == "user") + " " + message
+        relevant = [m["content"] for n, m in enumerate(history) if m["role"] == "user" and n + 1 < len(history) and history[n + 1].get("order_id") == order_id]
+        words = " ".join(relevant[-4:]) + " " + message
         reason = "CUSTOMER_REQUESTED"
         if failure:
             reason = failure
@@ -179,7 +191,9 @@ class Workflow:
             order_id = self.explicit_order(message) or args.get("order_id") or context["order_id"]
             item_id = args.get("item_id", "")
             # All commercial writes and damage claims go to human review even if misrouted.
-            if re.search(r"\b(refund|cancel|address|damaged|faulty|broken)\b", message, re.I):
+            if self.is_return_status(message):
+                tool = "check_return_eligibility"
+            elif re.search(r"\b(refund|cancel|address|damaged|faulty|broken)\b", message, re.I):
                 tool = "create_support_ticket"
             if order_id and not re.fullmatch(r"\d{4}", str(order_id)):
                 tool = "clarify"
