@@ -1,41 +1,181 @@
 [
   {
-    "order_id": "4812", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
-    "status": "in_transit", "carrier": "Demo Carrier", "carrier_eta_date": "2026-11-09",
-    "source_updated_at": "2026-11-07T10:30:00Z", "tracking_url": null,
-    "items": [{"item_id": "4812-1", "name": "Weekday Hoodie", "quantity": 1, "status": "in_transit", "delivered_at": null, "final_sale": false, "returned": false}]
-  },
-  {
-    "order_id": "4813", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
-    "status": "delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
-    "source_updated_at": "2026-10-25T15:00:00Z", "tracking_url": null,
-    "items": [{"item_id": "4813-1", "name": "Everyday Oxford", "quantity": 1, "status": "delivered", "delivered_at": "2026-10-25T15:00:00Z", "final_sale": false, "returned": false}]
-  },
-  {
-    "order_id": "4814", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
-    "status": "delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
-    "source_updated_at": "2026-10-01T15:00:00Z", "tracking_url": null,
-    "items": [{"item_id": "4814-1", "name": "Straight-leg Chino", "quantity": 1, "status": "delivered", "delivered_at": "2026-10-01T15:00:00Z", "final_sale": false, "returned": false}]
-  },
-  {
-    "order_id": "4815", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
-    "status": "delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
-    "source_updated_at": "2026-11-02T16:00:00Z", "tracking_url": null,
-    "items": [{"item_id": "4815-1", "name": "Archive Tee", "quantity": 1, "status": "delivered", "delivered_at": "2026-11-02T16:00:00Z", "final_sale": true, "returned": false}]
-  },
-  {
-    "order_id": "4816", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
-    "status": "partially_delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
-    "source_updated_at": "2026-11-04T16:00:00Z", "tracking_url": null,
+    "order_id": "4812",
+    "customer_id": "demo-customer-a",
+    "policy_version": "demo-returns-v1",
+    "status": "in_transit",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": "2026-11-09",
+    "source_updated_at": "2026-11-07T10:30:00Z",
+    "tracking_url": null,
     "items": [
-      {"item_id": "4816-1", "name": "Ribbed Cardigan", "quantity": 1, "status": "delivered", "delivered_at": "2026-11-03T16:00:00Z", "final_sale": false, "returned": false},
-      {"item_id": "4816-2", "name": "Canvas Overshirt", "quantity": 1, "status": "processing", "delivered_at": null, "final_sale": false, "returned": false}
-    ]
+      {
+        "item_id": "4812-1",
+        "name": "Weekday Hoodie",
+        "quantity": 1,
+        "status": "in_transit",
+        "delivered_at": null,
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "Forest"
+      }
+    ],
+    "ordered_at": "2026-11-05T15:20:00Z",
+    "order_total": 78.0,
+    "currency": "USD",
+    "shipping_city": "Austin, TX",
+    "tracking_reference": "DEMO4812US"
   },
   {
-    "order_id": "4901", "customer_id": "demo-customer-b", "policy_version": "demo-returns-v1",
-    "status": "delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
-    "source_updated_at": "2026-11-05T16:00:00Z", "tracking_url": null,
-    "items": [{"item_id": "4901-1", "name": "Utility Jacket", "quantity": 1, "status": "delivered", "delivered_at": "2026-11-05T16:00:00Z", "final_sale": false, "returned": false}]
+    "order_id": "4813",
+    "customer_id": "demo-customer-a",
+    "policy_version": "demo-returns-v1",
+    "status": "delivered",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-10-25T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4813-1",
+        "name": "Everyday Oxford",
+        "quantity": 1,
+        "status": "delivered",
+        "delivered_at": "2026-10-25T15:00:00Z",
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "White"
+      }
+    ],
+    "ordered_at": "2026-10-22T14:00:00Z",
+    "order_total": 64.0,
+    "currency": "USD",
+    "shipping_city": "Austin, TX",
+    "tracking_reference": "DEMO4813US"
+  },
+  {
+    "order_id": "4814",
+    "customer_id": "demo-customer-a",
+    "policy_version": "demo-returns-v1",
+    "status": "delivered",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-10-01T15:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4814-1",
+        "name": "Straight-leg Chino",
+        "quantity": 1,
+        "status": "delivered",
+        "delivered_at": "2026-10-01T15:00:00Z",
+        "final_sale": false,
+        "returned": false,
+        "size": "32",
+        "color": "Stone"
+      }
+    ],
+    "ordered_at": "2026-09-28T15:00:00Z",
+    "order_total": 72.0,
+    "currency": "USD",
+    "shipping_city": "Austin, TX",
+    "tracking_reference": "DEMO4814US"
+  },
+  {
+    "order_id": "4815",
+    "customer_id": "demo-customer-a",
+    "policy_version": "demo-returns-v1",
+    "status": "delivered",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-02T16:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4815-1",
+        "name": "Archive Tee",
+        "quantity": 1,
+        "status": "delivered",
+        "delivered_at": "2026-11-02T16:00:00Z",
+        "final_sale": true,
+        "returned": false,
+        "size": "M",
+        "color": "Ink"
+      }
+    ],
+    "ordered_at": "2026-10-30T14:00:00Z",
+    "order_total": 28.0,
+    "currency": "USD",
+    "shipping_city": "Austin, TX",
+    "tracking_reference": "DEMO4815US"
+  },
+  {
+    "order_id": "4816",
+    "customer_id": "demo-customer-a",
+    "policy_version": "demo-returns-v1",
+    "status": "partially_delivered",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-04T16:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4816-1",
+        "name": "Ribbed Cardigan",
+        "quantity": 1,
+        "status": "delivered",
+        "delivered_at": "2026-11-03T16:00:00Z",
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "Oat"
+      },
+      {
+        "item_id": "4816-2",
+        "name": "Canvas Overshirt",
+        "quantity": 1,
+        "status": "processing",
+        "delivered_at": null,
+        "final_sale": false,
+        "returned": false,
+        "size": "M",
+        "color": "Navy"
+      }
+    ],
+    "ordered_at": "2026-11-01T16:00:00Z",
+    "order_total": 184.0,
+    "currency": "USD",
+    "shipping_city": "Austin, TX",
+    "tracking_reference": "DEMO4816US"
+  },
+  {
+    "order_id": "4901",
+    "customer_id": "demo-customer-b",
+    "policy_version": "demo-returns-v1",
+    "status": "delivered",
+    "carrier": "Demo Carrier",
+    "carrier_eta_date": null,
+    "source_updated_at": "2026-11-05T16:00:00Z",
+    "tracking_url": null,
+    "items": [
+      {
+        "item_id": "4901-1",
+        "name": "Utility Jacket",
+        "quantity": 1,
+        "status": "delivered",
+        "delivered_at": "2026-11-05T16:00:00Z",
+        "final_sale": false,
+        "returned": false,
+        "size": "L",
+        "color": "Olive"
+      }
+    ],
+    "ordered_at": "2026-11-02T17:00:00Z",
+    "order_total": 112.0,
+    "currency": "USD",
+    "shipping_city": "Seattle, WA",
+    "tracking_reference": "DEMO4901US"
   }
 ]

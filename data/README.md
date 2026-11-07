@@ -5,6 +5,7 @@ All records are fictional and contain no customer contact information. JSON seed
 - `demo-config.json`: fixed demo clock, business timezone, source-health settings.
 - `orders.json`: six orders, including one belonging to a different simulated customer.
 - `return-policy.json`: illustrative rules for initial return eligibility.
+- `customers.json`: fictional checkout email/phone mappings for the WhatsApp-style conversation. Domains and 555-01xx phone numbers are reserved examples. Email/phone matching alone does not verify ownership; the channel uses an explicitly simulated code challenge.
 
 At the fixed clock, customer `demo-customer-a` owns orders 4812–4816. Customer `demo-customer-b` owns 4901. Customer A must not discover B's record through a guessed number.
 

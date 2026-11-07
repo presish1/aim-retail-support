@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,14 +14,70 @@ from pydantic import BaseModel, ConfigDict, Field
 from .model import ModelAdapter
 from .service import SourceError, Workflow, iso_now
 from .store import ROOT, Store
+from .whatsapp import ChannelHub, WhatsAppChannel
 
 
-app = FastAPI(title="Threadline synthetic support API", version="0.2.0")
+app = FastAPI(title="Threadline synthetic support API", version="0.3.0")
 store = Store()
 adapter = ModelAdapter()
 workflow = Workflow(store, adapter)
 admin_key = secrets.token_urlsafe(32)
 session_locks = {}
+channel_hub = ChannelHub()
+
+
+@app.websocket("/api/whatsapp/ws")
+async def whatsapp_socket(socket: WebSocket):
+    origin = socket.headers.get("origin", "")
+    if not origin or urlparse(origin).hostname not in ("localhost", "127.0.0.1", "::1"):
+        await socket.close(code=1008)
+        return
+    await socket.accept()
+    channel = WhatsAppChannel(store, workflow, channel_hub)
+    session_id = None
+    try:
+        hello = await asyncio.wait_for(socket.receive_json(), timeout=10)
+        if not isinstance(hello, dict) or hello.get("type") != "resume":
+            await socket.close(code=1008)
+            return
+        token = hello.get("session_id")
+        if token is not None and (not isinstance(token, str) or len(token) > 120):
+            await socket.close(code=1008)
+            return
+        record = channel.start(token)
+        session_id = record["id"]
+        channel_hub.add(session_id, socket)
+        await socket.send_json(channel.snapshot(record))
+        while True:
+            event = await socket.receive_json()
+            if not isinstance(event, dict):
+                await socket.send_json({"type": "error", "message": "Send a valid message."})
+                continue
+            if event.get("type") == "message":
+                text, client_id = event.get("text"), event.get("id")
+                if not isinstance(text, str) or not text.strip() or len(text) > 2000 or not isinstance(client_id, str) or not 8 <= len(client_id) <= 80:
+                    await socket.send_json({"type": "error", "message": "Message must contain 1–2,000 characters and a valid request ID."})
+                    continue
+                mode = event.get("mode", "model")
+                if mode not in ("model", "baseline"):
+                    await socket.send_json({"type": "error", "message": "Unknown request mode."})
+                    continue
+                await channel.handle(session_id, client_id, text.strip(), mode)
+            elif event.get("type") == "reset":
+                channel_hub.remove(session_id, socket)
+                record = channel.start()
+                session_id = record["id"]
+                channel_hub.add(session_id, socket)
+                await socket.send_json(channel.snapshot(record))
+            elif event.get("type") == "ping":
+                await socket.send_json({"type": "pong"})
+            else:
+                await socket.send_json({"type": "error", "message": "Unknown channel event."})
+    except (WebSocketDisconnect, RuntimeError, asyncio.TimeoutError, ValueError):
+        pass
+    finally:
+        if session_id:
+            channel_hub.remove(session_id, socket)
 
 
 @app.middleware("http")
@@ -47,6 +103,14 @@ def require_session(x_demo_session: str = Header(default="")):
     if not session:
         raise HTTPException(401, "Start a new simulated customer session.")
     return session
+
+
+@app.get("/api/studio/whatsapp")
+def whatsapp_demo_inbox(x_demo_session: str = Header(default=""), _=Depends(require_admin)):
+    record = store.channel(x_demo_session)
+    if not record:
+        raise HTTPException(404, "No active channel session.")
+    return WhatsAppChannel(store, workflow, channel_hub).demo_inbox(record)
 
 
 class StrictBody(BaseModel):
@@ -130,7 +194,7 @@ def studio_state():
 
 
 @app.patch("/api/studio/orders/{order_id}", dependencies=[Depends(require_admin)])
-def update_order(order_id: str, body: OrderUpdate):
+async def update_order(order_id: str, body: OrderUpdate):
     order = store.order(order_id)
     if not order:
         raise HTTPException(404, "No such synthetic order.")
@@ -151,13 +215,15 @@ def update_order(order_id: str, body: OrderUpdate):
             item["status"] = body.status
             item["delivered_at"] = None
     store.save_order(order)
+    await channel_hub.source_changed(store, order_id)
     return {"order": order, "saved_at": iso_now(), "source": "SQLite"}
 
 
 @app.patch("/api/studio/controls", dependencies=[Depends(require_admin)])
-def controls(body: Controls):
+async def controls(body: Controls):
     for key, value in body.model_dump(exclude_none=True).items():
         store.set_setting(key, value)
+    await channel_hub.source_changed(store)
     return {"settings": store.settings()}
 
 

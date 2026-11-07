@@ -1,11 +1,21 @@
 # Threadline
 ### Order & returns support, grounded in the order system
 
-**AI in Management · MBA · Scenario A · Working prototype v0.2 · 7 November 2026**
+**AI in Management · MBA · Scenario A · Working prototype v0.3 · 7 November 2026**
 
 > Recommend a small, supervised AI service that answers routine post-purchase questions using current order records, checks return eligibility with explicit business rules, and hands exceptions to a person with the context attached.
 
 This repository contains the **working local prototype**, service design, and architecture for an academic consulting assignment. It connects Qwen3-8B to an API-backed synthetic order database. “Threadline” is a working concept name; the retailer and all example records are fictional.
+
+## WhatsApp customer experience
+
+Open **http://127.0.0.1:5173/whatsapp**, or use **WhatsApp demo** in the studio header to open it in a new tab. The iPhone-style conversation connects through a real WebSocket to the existing AI and order service.
+
+Ask “Where is my order?”, then supply **alex@example.com** or **+1 202 555 0147**. Enter the code shown in the local demo verification inbox and choose an active order. No internal customer ID or order number is needed to begin. **casey@example.com** is a second fictional customer for testing access boundaries.
+
+The demo includes live message acknowledgements, typing state, conversation resume, scoped order-change events, dark mode, and an optional iOS-style keyboard. [Read the channel design, architecture, references, and checks](docs/08-whatsapp-experience.md).
+
+![iPhone-style WhatsApp conversation connected to Qwen3-8B and the synthetic order system](design/whatsapp-prototype.png)
 
 ## Run the prototype
 
@@ -87,6 +97,7 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 | [Models & business case](docs/05-models-and-business-case.md) | Shortlist, selection method, cost assumptions, and owner decision |
 | [Evaluation & handoff](docs/06-evaluation-and-handoff.md) | Test design, pilot gates, ownership, and evidence for the slide team |
 | [Implementation & measured checks](docs/07-implementation-status.md) | What works, the actual model, verification evidence, and limits |
+| [WhatsApp customer experience](docs/08-whatsapp-experience.md) | Separate iPhone-style chat, WebSocket architecture, account lookup, and UI references |
 | [Sources](docs/sources.md) | Primary references checked for the model and deployment discussion |
 | [Demo data](data/README.md) | Six synthetic orders, an illustrative policy, and a fixed demo clock |
 | [Evaluation scenarios](evaluation/scenarios.csv) | Thirty planned checks; no measured results |
@@ -104,6 +115,6 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 
 **Completed:** the three responsive views, real Qwen3-8B tool selection via Ollama, persistent API-backed order records, source updates, return rules, access boundaries, failure controls, deduplicated handoffs, actual response traces, and a rules baseline.
 
-**Verified locally:** 29 backend tests; 12 focused integration scenarios in each of model and baseline modes; desktop and mobile browser flows. See the [implementation status](docs/07-implementation-status.md) and [recorded smoke run](evaluation/results/local-qwen3-smoke.json). These checks are not a held-out benchmark or proof of production reliability.
+**Verified locally:** 46 backend tests; 12 focused integration scenarios in each of model and baseline modes; desktop and mobile browser flows; the complete WhatsApp-style customer journey and a cross-tab live source update. See the [implementation status](docs/07-implementation-status.md), [channel notes](docs/08-whatsapp-experience.md), and [recorded v0.2 smoke run](evaluation/results/local-qwen3-smoke.json). These checks are not a held-out benchmark or proof of production reliability.
 
 **Next:** a separate held-out paraphrase/multi-turn evaluation, measured model comparison and cost analysis, then presentation evidence. An actual retailer pilot also needs its real systems, verification, and deployment review.

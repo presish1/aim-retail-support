@@ -1,0 +1,16 @@
+[
+  {
+    "customer_id": "demo-customer-a",
+    "first_name": "Alex",
+    "email": "alex@example.com",
+    "phone": "+12025550147",
+    "synthetic": true
+  },
+  {
+    "customer_id": "demo-customer-b",
+    "first_name": "Casey",
+    "email": "casey@example.com",
+    "phone": "+12025550186",
+    "synthetic": true
+  }
+]

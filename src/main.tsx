@@ -7,6 +7,7 @@ import '@fontsource/cormorant-garamond/400.css'
 import '@fontsource/cormorant-garamond/500.css'
 import '@fontsource/cormorant-garamond/400-italic.css'
 import App from './App'
+import WhatsAppDemo from './WhatsApp'
 import './styles.css'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>)
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode>{location.pathname.startsWith('/whatsapp') ? <WhatsAppDemo /> : <App />}</React.StrictMode>)

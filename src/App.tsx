@@ -90,6 +90,14 @@ export default function App() {
     return () => { alive = false; clearInterval(timer) }
   }, [refresh, updateHealth])
   useEffect(() => {
+    if (!admin) return
+    const update = () => { if (document.visibilityState === 'visible') refresh(admin).catch(() => {}) }
+    update()
+    window.addEventListener('focus', update)
+    document.addEventListener('visibilitychange', update)
+    return () => { window.removeEventListener('focus', update); document.removeEventListener('visibilitychange', update) }
+  }, [view, admin, refresh])
+  useEffect(() => {
     let alive = true
     setSession(''); setMessages([]); setError('')
     request<{ session_id: string }>('/session', { method: 'POST', body: JSON.stringify({ persona }) }).then(data => { if (alive) setSession(data.session_id) }).catch(e => { if (alive) setError(e.message) })
@@ -142,7 +150,7 @@ export default function App() {
   const lastReply = [...messages].reverse().find(m => m.reply)?.reply
 
   return <div className="app-shell">
-    <header className="site-header"><a href="#" className="wordmark" onClick={e => { e.preventDefault(); setView('desk') }} aria-label="Threadline home"><ThreadMark />Threadline<span className="wordmark-period">.</span></a><div className="header-description">ORDER & RETURNS STUDIO<span>AI in Management · Scenario A</span></div><div className="header-right"><span className="synthetic-label"><span />Synthetic data</span><a className="icon-button repo-link" href="https://github.com/presish1/aim-retail-support" target="_blank" rel="noreferrer" aria-label="Open project repository"><ExternalLink size={17} /></a><button className="icon-button" aria-label="How the prototype works" onClick={() => setGuide(true)}><CircleHelp size={19} /></button></div></header>
+    <header className="site-header"><a href="#" className="wordmark" onClick={e => { e.preventDefault(); setView('desk') }} aria-label="Threadline home"><ThreadMark />Threadline<span className="wordmark-period">.</span></a><div className="header-description">ORDER & RETURNS STUDIO<span>AI in Management · Scenario A</span></div><div className="header-right"><a className="wa-launch" href="/whatsapp" target="_blank" rel="noreferrer"><MessageCircle size={15} />WhatsApp demo<ExternalLink size={12} /></a><span className="synthetic-label"><span />Synthetic data</span><a className="icon-button repo-link" href="https://github.com/presish1/aim-retail-support" target="_blank" rel="noreferrer" aria-label="Open project repository"><ExternalLink size={17} /></a><button className="icon-button" aria-label="How the prototype works" onClick={() => setGuide(true)}><CircleHelp size={19} /></button></div></header>
     <nav className="view-nav" aria-label="Prototype views"><div>{([{ id: 'desk', title: 'Customer desk', num: '01', icon: MessageCircle }, { id: 'orders', title: 'Order system', num: '02', icon: Database }, { id: 'inbox', title: 'Agent inbox', num: '03', icon: Inbox }] as const).map(tab => <button key={tab.id} onClick={() => setView(tab.id)} aria-current={view === tab.id ? 'page' : undefined} className={view === tab.id ? 'nav-active' : ''}><span className="nav-num">{tab.num}</span><tab.icon size={16} /><span>{tab.title}</span>{tab.id === 'inbox' && !!studio?.tickets.length && <span className="count">{studio.tickets.length}</span>}</button>)}</div><span className="demo-date"><Clock3 size={13} />Demo clock · 7 Nov 2026</span></nav>
     <main>
       <div className="page-intro"><div><span className="eyebrow">{view === 'desk' ? 'THE POST-PURCHASE EXPERIENCE' : view === 'orders' ? 'THE SOURCE OF TRUTH' : 'WHEN A HUMAN MAKES THE DIFFERENCE'}</span><h1>{view === 'desk' ? <>A little clarity.<br className="mobile-break" /><em> A lot less waiting.</em></> : view === 'orders' ? <>Change the record.<em> See the difference.</em></> : <>Thoughtful handoffs.<em> Better resolutions.</em></>}</h1></div><p>{view === 'desk' ? 'A current answer to the everyday questions.\nA real person for everything that needs one.' : view === 'orders' ? 'Update the synthetic order system, then ask again.\nEvery answer starts with a fresh source read.' : 'Questions, order facts, and attempted steps.\nReady for your team to pick up.'}</p></div>

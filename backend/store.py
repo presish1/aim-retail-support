@@ -19,9 +19,18 @@ class Store:
               CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, customer TEXT, history TEXT NOT NULL DEFAULT '[]');
               CREATE TABLE IF NOT EXISTS tickets (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, dedup_key TEXT UNIQUE NOT NULL, record TEXT NOT NULL);
               CREATE TABLE IF NOT EXISTS traces (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, record TEXT NOT NULL);
+              CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, phone TEXT UNIQUE NOT NULL, record TEXT NOT NULL);
+              CREATE TABLE IF NOT EXISTS channel_sessions (id TEXT PRIMARY KEY, record TEXT NOT NULL);
             """)
         if self.setting("demo_now") is None:
             self.reset()
+        self.seed_customers()
+
+    def seed_customers(self):
+        customers = json.loads((ROOT / "data/customers.json").read_text())
+        with self.connect() as db:
+            for customer in customers:
+                db.execute("INSERT OR IGNORE INTO customers VALUES (?,?,?,?)", (customer["customer_id"], customer["email"].lower(), customer["phone"], json.dumps(customer)))
 
     @contextmanager
     def connect(self):
@@ -41,13 +50,43 @@ class Store:
         policy = json.loads((ROOT / "data/return-policy.json").read_text())
         orders = json.loads((ROOT / "data/orders.json").read_text())
         with self.connect() as db:
-            for table in ("settings", "orders", "tickets", "traces"):
+            for table in ("settings", "orders", "tickets", "traces", "customers", "channel_sessions"):
                 db.execute(f"DELETE FROM {table}")  # fixed internal identifiers
             db.execute("UPDATE sessions SET history='[]'")
             for name, value in {**config, "policy": policy, "ticket_store_available": True}.items():
                 db.execute("INSERT INTO settings VALUES (?,?)", (name, json.dumps(value)))
             for order in orders:
                 db.execute("INSERT INTO orders VALUES (?,?,?)", (order["order_id"], order["customer_id"], json.dumps(order)))
+        self.seed_customers()
+
+    def customer(self, customer_id):
+        with self.connect() as db:
+            row = db.execute("SELECT record FROM customers WHERE id=?", (customer_id,)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def find_customer(self, identifier):
+        normalized = identifier.strip().lower()
+        if "@" not in normalized:
+            digits = "".join(c for c in normalized if c.isdigit())
+            if len(digits) == 10:
+                digits = "1" + digits
+            normalized = "+" + digits
+        with self.connect() as db:
+            row = db.execute("SELECT record FROM customers WHERE email=? OR phone=?", (normalized, normalized)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def bind_customer(self, session_id, customer):
+        with self.connect() as db:
+            db.execute("UPDATE sessions SET customer=?, history='[]' WHERE id=?", (customer, session_id))
+
+    def channel(self, session_id):
+        with self.connect() as db:
+            row = db.execute("SELECT record FROM channel_sessions WHERE id=?", (session_id,)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def save_channel(self, record):
+        with self.connect() as db:
+            db.execute("INSERT OR REPLACE INTO channel_sessions VALUES (?,?)", (record["id"], json.dumps(record)))
 
     def setting(self, name):
         with self.connect() as db:
