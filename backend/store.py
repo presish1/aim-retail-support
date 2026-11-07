@@ -1,5 +1,6 @@
 """Small persistent synthetic order system. No live customer data belongs here."""
 import json
+import math
 import os
 import sqlite3
 import uuid
@@ -25,6 +26,7 @@ class Store:
               CREATE TABLE IF NOT EXISTS channel_sessions (id TEXT PRIMARY KEY, record TEXT NOT NULL);
               CREATE TABLE IF NOT EXISTS returns (id TEXT PRIMARY KEY, record TEXT NOT NULL);
               CREATE TABLE IF NOT EXISTS activity (id TEXT PRIMARY KEY, record TEXT NOT NULL);
+              CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, path TEXT NOT NULL);
             """)
         if self.setting("demo_now") is None:
             self.reset()
@@ -51,6 +53,8 @@ class Store:
                     item.setdefault("unit_price", fixture["unit_price"])
             if json.dumps(record, sort_keys=True) != original:
                 self.save_order(record)
+        from .region import migrate
+        migrate(self, ROOT)
 
     def seed_customers(self):
         customers = json.loads((ROOT / "data/customers.json").read_text())
@@ -80,7 +84,7 @@ class Store:
         policy = json.loads((ROOT / "data/return-policy.json").read_text())
         orders = json.loads((ROOT / "data/orders.json").read_text())
         with self.connect() as db:
-            for table in ("settings", "orders", "tickets", "traces", "customers", "channel_sessions", "returns", "activity"):
+            for table in ("settings", "orders", "tickets", "traces", "customers", "channel_sessions", "returns", "activity", "media"):
                 db.execute(f"DELETE FROM {table}")  # fixed internal identifiers
             db.execute("UPDATE sessions SET history='[]'")
             for name, value in {**config, "policy": policy, "ticket_store_available": True, "verification_mode": "demo_match", "inference_mode": "model"}.items():
@@ -104,7 +108,7 @@ class Store:
         if "@" not in normalized:
             digits = "".join(c for c in normalized if c.isdigit())
             if len(digits) == 10:
-                digits = "1" + digits
+                digits = "91" + digits
             normalized = "+" + digits
         with self.connect() as db:
             row = db.execute("SELECT record FROM customers WHERE email=? OR phone=? OR lower(id)=? OR lower(json_extract(record,'$.display_id'))=?", (normalized, normalized, identifier.strip().lower(), identifier.strip().lower())).fetchone()
@@ -207,6 +211,41 @@ class Store:
     def save_return(self, record):
         with self.connect() as db:
             db.execute("INSERT OR REPLACE INTO returns VALUES (?,?)", (record["id"], json.dumps(record)))
+
+    def create_return_once(self, record):
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            rows = [json.loads(r[0]) for r in db.execute("SELECT record FROM returns ORDER BY rowid DESC")]
+            existing = next((r for r in rows if r["order_id"] == record["order_id"] and r["item_id"] == record["item_id"] and r["status"] != "declined"), None)
+            if existing:
+                return existing
+            number = max([1000, *[int(r["id"].removeprefix("RMA-")) for r in rows]]) + 1
+            record = {**record, "id": "RMA-" + str(number)}
+            db.execute("INSERT INTO returns VALUES (?,?)", (record["id"], json.dumps(record)))
+            return record
+
+    def transition_return(self, before, after):
+        """Commit return and payment projection together, rejecting stale staff edits."""
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT record FROM returns WHERE id=?", (before["id"],)).fetchone()
+            if not row or json.loads(row[0]) != before:
+                raise ValueError("return_conflict")
+            if after["status"] != before["status"] and after["status"] in ("received", "refunded"):
+                row = db.execute("SELECT record FROM orders WHERE id=?", (after["order_id"],)).fetchone()
+                order = json.loads(row[0]) if row else None
+                item = next((i for i in order["items"] if i["item_id"] == after["item_id"]), None) if order else None
+                if not item or not math.isfinite(item["unit_price"]) or not math.isfinite(after["refund_amount"]):
+                    raise ValueError("invalid_return_value")
+                if not item or type(after["quantity"]) is not int or not 1 <= after["quantity"] <= item["quantity"] or abs(item["unit_price"] * after["quantity"] - after["refund_amount"]) > .01:
+                    raise ValueError("return_value_mismatch")
+                item["returned"] = after["quantity"] >= item["quantity"]
+                if after["status"] == "refunded":
+                    order["payment_status"] = "refunded" if all(i.get("returned") for i in order["items"]) else "partially_refunded"
+                order["revision"] = order.get("revision", 1) + 1
+                order["source_updated_at"] = datetime.now(timezone.utc).isoformat()
+                db.execute("UPDATE orders SET record=? WHERE id=?", (json.dumps(order), order["order_id"]))
+            db.execute("UPDATE returns SET record=? WHERE id=?", (json.dumps(after), after["id"]))
 
     def update_ticket(self, ticket):
         with self.connect() as db:

@@ -12,3 +12,5 @@ Checked **7 November 2026**. Availability, pricing, endpoint behavior, and provi
 | [Official WhatsApp Business pricing](https://whatsappbusiness.com/products/platform-pricing/) | Service-window concept and category/market-dependent charging | A specific retailer's total channel cost, BSP fees, or integration readiness |
 
 All sample policies, customer IDs, item names, dates, model-token budgets, labor rates, benefit examples, and acceptance thresholds in this repository are illustrative design inputs unless explicitly marked otherwise. No provider quote, benchmark result, or retailer measurement has been collected in v0.1.
+
+Current UI references: [WhatsApp Business app features](https://whatsappbusiness.com/products/business-app-features/) and [Business Platform features](https://whatsappbusiness.com/products/business-platform-features/). Apparel photography is licensed under the [Unsplash license](https://unsplash.com/license); photographer and image-page attribution is recorded in [public/products/credits.json](../public/products/credits.json). Images illustrate fictional catalogue items.

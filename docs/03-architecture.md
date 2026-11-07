@@ -108,7 +108,7 @@ sequenceDiagram
 
 Every new order-specific request triggers a fresh source read. Earlier conversation history is context, never evidence of current order status. A successful current query does not prove a carrier feed is current: preserve both the fetch time and upstream event/health times. An unchanged order is not automatically stale; classify feed lag using integration health and carrier-event expectations, not just record age.
 
-For the demo, source timestamps are in UTC and the policy date calculation uses `America/New_York`. The demo clock is injectable; production uses trusted server time. Handle timezone conversion and daylight-saving changes in code.
+For the demo, source timestamps are in UTC and the policy date calculation uses `Asia/Kolkata`. The demo clock is injectable; production uses trusted server time. Handle timezone conversion in code. The current implementation extends these original contracts; see [v0.5](10-grounded-india-returns.md).
 
 ## Return decision rules
 

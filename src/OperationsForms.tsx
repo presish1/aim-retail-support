@@ -474,6 +474,24 @@ export function OrderDetails({
     setForm({ ...form, [key]: value });
     setSaved(false);
   };
+  async function updateItem(itemId: string, status: string) {
+    setBusy(true);
+    setError("");
+    try {
+      const next = await save({
+        item_statuses: [{ item_id: itemId, status }],
+        revision,
+      });
+      setForm(orderFields(next));
+      setBase(orderFields(next));
+      setRevision(next.revision || 1);
+      setSaved(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function commit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -575,11 +593,15 @@ export function OrderDetails({
                 {order.items.map((item) => (
                   <div key={item.item_id}>
                     <span className="erp-item-icon">
-                      {item.name
-                        .split(" ")
-                        .map((w) => w[0])
-                        .slice(0, 2)
-                        .join("")}
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} />
+                      ) : (
+                        item.name
+                          .split(" ")
+                          .map((w) => w[0])
+                          .slice(0, 2)
+                          .join("")
+                      )}
                     </span>
                     <div>
                       <strong>{item.name}</strong>
@@ -588,6 +610,32 @@ export function OrderDetails({
                         {item.quantity}
                         {item.returned ? " · Returned" : ""}
                       </small>
+                      <select
+                        className="erp-item-status"
+                        aria-label={`Delivery status for ${item.name}`}
+                        value={item.status}
+                        disabled={
+                          busy ||
+                          dirty ||
+                          item.returned ||
+                          order.status === "cancelled"
+                        }
+                        onChange={(e) =>
+                          void updateItem(item.item_id, e.target.value)
+                        }
+                      >
+                        {[
+                          "processing",
+                          "in_transit",
+                          "delivered",
+                          ...(item.returned ? ["returned"] : []),
+                          ...(item.status === "cancelled" ? ["cancelled"] : []),
+                        ].map((s) => (
+                          <option value={s} key={s}>
+                            {labels[s]}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <span>
                       {item.unit_price
@@ -891,29 +939,63 @@ export function ReturnDetails({
 }: {
   record: ReturnRecord;
   customer?: Customer;
-  save: (body: unknown) => Promise<void>;
+  save: (body: unknown) => Promise<ReturnRecord>;
   openOrder: () => void;
 }) {
   const [notes, setNotes] = useState(record.notes),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [pickupDate, setPickupDate] = useState(record.pickup_date || "");
+  const [pickupRef, setPickupRef] = useState(record.pickup_reference || "");
+  const [inspection, setInspection] = useState(record.inspection || "pending");
+  const [refundRef, setRefundRef] = useState(record.refund_reference || "");
+  const [publicReason, setPublicReason] = useState(record.public_reason || "");
+  const [baseUpdated, setBaseUpdated] = useState(record.updated_at);
+  const changed = baseUpdated !== record.updated_at;
+  function reloadReturn() {
+    setNotes(record.notes);
+    setPickupDate(record.pickup_date || "");
+    setPickupRef(record.pickup_reference || "");
+    setInspection(record.inspection || "pending");
+    setRefundRef(record.refund_reference || "");
+    setPublicReason(record.public_reason || "");
+    setBaseUpdated(record.updated_at);
+    setError("");
+  }
   const transitions: Record<string, { value: string; label: string }[]> = {
     requested: [
       { value: "approved", label: "Approve return" },
       { value: "declined", label: "Decline return" },
     ],
     approved: [
-      { value: "received", label: "Mark received" },
+      { value: "pickup_scheduled", label: "Confirm pickup booking" },
       { value: "declined", label: "Decline return" },
     ],
-    received: [{ value: "refunded", label: "Record refund" }],
+    pickup_scheduled: [
+      { value: "received", label: "Mark received for inspection" },
+    ],
+    received: [
+      { value: "refunded", label: "Record refund" },
+      { value: "declined", label: "Decline after inspection" },
+    ],
     declined: [{ value: "requested", label: "Reopen request" }],
     refunded: [],
   };
   async function update(status: string) {
     setBusy(true);
     try {
-      await save({ status, notes });
+      const next = await save({
+        status,
+        notes,
+        updated_at: baseUpdated,
+        pickup_date: pickupDate || null,
+        pickup_reference: pickupRef,
+        inspection,
+        refund_reference: refundRef,
+        public_reason: publicReason,
+      });
+      setBaseUpdated(next.updated_at);
+      setError("");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -922,6 +1004,14 @@ export function ReturnDetails({
   }
   return (
     <div className="erp-drawer-content">
+      {changed && !busy && (
+        <div className="erp-inline-warning">
+          This return changed in another tab.
+          <button type="button" onClick={reloadReturn}>
+            Reload current record
+          </button>
+        </div>
+      )}
       <div className="erp-detail-summary">
         <Badge value={record.status} />
         <span>{stamp(record.created_at)}</span>
@@ -946,16 +1036,85 @@ export function ReturnDetails({
           <dd>{record.reason}</dd>
           <dt>Refund value</dt>
           <dd>{money(record.refund_amount)}</dd>
+          {record.source && (
+            <>
+              <dt>Submitted through</dt>
+              <dd>{record.source}</dd>
+            </>
+          )}
+          {record.condition && (
+            <>
+              <dt>Customer condition</dt>
+              <dd>{record.condition}</dd>
+              <dt>Product tags</dt>
+              <dd>{record.tags}</dd>
+            </>
+          )}
+          {record.pickup_address && (
+            <>
+              <dt>Pickup address</dt>
+              <dd>{record.pickup_address}</dd>
+              <dt>Preferred window</dt>
+              <dd>{record.pickup_preference}</dd>
+            </>
+          )}
+          {record.pickup_reference && (
+            <>
+              <dt>Booking</dt>
+              <dd>
+                {record.pickup_date} · {record.pickup_reference}
+              </dd>
+            </>
+          )}
+          {record.refund_reference && (
+            <>
+              <dt>Refund reference</dt>
+              <dd>{record.refund_reference}</dd>
+            </>
+          )}
         </dl>
       </section>
+      {!!record.photos?.length && (
+        <section className="erp-detail-section">
+          <h3>
+            Customer photos <span>{record.photos.length}</span>
+          </h3>
+          <div className="erp-return-photos">
+            {record.photos.map((p) => (
+              <a href={p.url} target="_blank" rel="noreferrer" key={p.id}>
+                <img src={p.url} alt="Customer supplied return evidence" />
+              </a>
+            ))}
+          </div>
+          <p className="erp-muted">
+            Evidence received. Review the garment, tag, and any reported damage.
+          </p>
+        </section>
+      )}
+      {record.review_required && record.status === "requested" && (
+        <div className="erp-inline-warning">
+          Review required: condition, tags, or missing photos need a staff
+          decision.
+        </div>
+      )}
       <div className="erp-return-steps">
-        {["requested", "approved", "received", "refunded"].map((step, i) => (
+        {[
+          "requested",
+          "approved",
+          "pickup_scheduled",
+          "received",
+          "refunded",
+        ].map((step, i) => (
           <div
             key={step}
             className={
-              ["requested", "approved", "received", "refunded"].indexOf(
-                record.status,
-              ) >= i
+              [
+                "requested",
+                "approved",
+                "pickup_scheduled",
+                "received",
+                "refunded",
+              ].indexOf(record.status) >= i
                 ? "complete"
                 : ""
             }
@@ -965,6 +1124,62 @@ export function ReturnDetails({
           </div>
         ))}
       </div>
+      {record.status === "approved" && (
+        <section className="erp-detail-section">
+          <h3>Confirm carrier booking</h3>
+          <p className="erp-muted">
+            Record an existing booking. This demo does not book a carrier.
+          </p>
+          <div className="erp-form-grid">
+            <label>
+              Pickup date
+              <input
+                type="date"
+                value={pickupDate}
+                onChange={(e) => setPickupDate(e.target.value)}
+              />
+            </label>
+            <label>
+              Carrier booking reference
+              <input
+                value={pickupRef}
+                placeholder="e.g. DEMO-PU-1042"
+                onChange={(e) => setPickupRef(e.target.value)}
+              />
+            </label>
+          </div>
+        </section>
+      )}
+      {record.status === "received" && (
+        <section className="erp-detail-section">
+          <h3>Inspection & refund</h3>
+          <div className="erp-form-grid">
+            <label>
+              Inspection result
+              <select
+                value={inspection}
+                onChange={(e) => setInspection(e.target.value)}
+              >
+                <option value="pending">Pending inspection</option>
+                <option value="passed">Passed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </label>
+            <label>
+              Recorded refund reference
+              <input
+                value={refundRef}
+                placeholder="Payment / refund reference"
+                onChange={(e) => setRefundRef(e.target.value)}
+              />
+            </label>
+          </div>
+          <p className="erp-muted">
+            Recording a refund updates this demo ledger. It does not transfer
+            money.
+          </p>
+        </section>
+      )}
       <label className="erp-field">
         Internal notes
         <textarea
@@ -973,6 +1188,18 @@ export function ReturnDetails({
           onChange={(e) => setNotes(e.target.value)}
         />
       </label>
+      {["requested", "approved", "received"].includes(record.status) && (
+        <label className="erp-field">
+          Reason visible to customer{" "}
+          <span className="erp-muted">Required if declining</span>
+          <input
+            value={publicReason}
+            maxLength={200}
+            placeholder="Explain the decision and next step"
+            onChange={(e) => setPublicReason(e.target.value)}
+          />
+        </label>
+      )}
       {error && (
         <p className="erp-form-error" role="alert">
           {error}
@@ -983,7 +1210,15 @@ export function ReturnDetails({
           <button
             className={"erp-button " + (i === 0 ? "primary" : "")}
             key={action.value}
-            disabled={busy}
+            disabled={
+              busy ||
+              changed ||
+              (action.value === "pickup_scheduled" &&
+                (!pickupDate || !pickupRef.trim())) ||
+              (action.value === "refunded" &&
+                (inspection !== "passed" || !refundRef.trim())) ||
+              (action.value === "declined" && !publicReason.trim())
+            }
             onClick={() => update(action.value)}
           >
             {action.label}
@@ -991,7 +1226,7 @@ export function ReturnDetails({
         ))}
         <button
           className="erp-button"
-          disabled={busy || notes === record.notes}
+          disabled={busy || changed || notes === record.notes}
           onClick={() => update(record.status)}
         >
           Save note
@@ -1140,6 +1375,26 @@ export function ConversationView({
       <div className="erp-conversation-thread">
         {record.messages.map((m) => (
           <div key={m.id} className={m.role === "user" ? "out" : "in"}>
+            {m.media && (
+              <img
+                className="erp-conversation-photo"
+                src={m.media.url}
+                alt="Return photo from customer"
+              />
+            )}
+            {m.product && (
+              <div className="erp-conversation-product">
+                {m.product.image && (
+                  <img src={m.product.image} alt={m.product.name} />
+                )}
+                <div>
+                  <strong>{m.product.name}</strong>
+                  <small>
+                    {m.product.variant} · {money(m.product.amount)}
+                  </small>
+                </div>
+              </div>
+            )}
             <span>
               {m.role === "user" ? "Customer" : "Threadline"} · {stamp(m.at)}
             </span>

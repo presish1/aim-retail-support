@@ -51,13 +51,13 @@ def test_default_lookup_is_clear_and_does_not_request_unavailable_code(erp_syste
     assert record["stage"] == "contact" and record["code_hash"] is None
     assert "couldn't find a customer account" in record["messages"][-1]["text"]
     assert "code" not in record["messages"][-1]["text"]
-    record = send(channel, record, "alex@example.com")
+    record = send(channel, record, "aarav@example.com")
     assert record["stage"] == "choose_order"
     assert store.session(record["id"])["customer"] == "demo-customer-a"
     assert record["verification_method"] == "demo_contact_match"
 
 
-@pytest.mark.parametrize("identifier", ["CUS-1001", "cus1001", "+1 (202) 555-0147", "alex@example.com"])
+@pytest.mark.parametrize("identifier", ["CUS-1001", "cus1001", "+91 90000 00101", "aarav@example.com"])
 def test_customer_keys_match_same_record(erp_system, identifier):
     _, _, store, _, _ = erp_system
     assert store.find_customer(identifier)["customer_id"] == "demo-customer-a"
@@ -72,13 +72,13 @@ def test_new_customer_and_order_are_immediately_found_in_chat(erp_system):
     response = client.post("/api/studio/orders", headers=headers, json={"customer_id": customer["customer_id"], "shipping_city": "Austin, TX", "items": [{"sku": "TL-HOOD-01", "quantity": 2, "size": "L"}]})
     assert response.status_code == 200
     order = response.json()
-    assert order["order_total"] == 156 and order["status"] == "processing"
+    assert order["order_total"] == 3998 and order["status"] == "processing"
     channel = WhatsAppChannel(store, workflow, hub)
     record = send(channel, channel.start(), "Where is my order?")
     record = send(channel, record, "robin@example.com")
     assert record["selected_order"] == order["order_id"]
-    assert "USD 156.00" in record["messages"][-1]["text"]
-    assert "Weekday Hoodie" in record["messages"][-1]["text"]
+    assert "₹3,998.00" in record["messages"][-1]["text"]
+    assert record["messages"][-1]["product"]["name"] == "Weekday Hoodie"
     assert Store(store.path).order(order["order_id"])["items"][0]["quantity"] == 2
 
 
@@ -128,20 +128,21 @@ def test_internal_order_notes_stay_in_operations_payload(erp_system):
     client, headers, store, workflow, hub = erp_system
     client.patch("/api/studio/orders/4812", headers=headers, json={"notes": "Internal operations note only"})
     channel = WhatsAppChannel(store, workflow, hub)
-    record = send(channel, channel.start(), "alex@example.com")
+    record = send(channel, channel.start(), "aarav@example.com")
     record = send(channel, record, "4812")
     public = channel.snapshot(record)
     import json
     assert "latest_trace" not in public
     assert "Internal operations" not in json.dumps(public)
-    assert "Internal operations note only" in store.channel(record["id"])["latest_trace"]["evidence"]["notes"]
+    assert "notes" not in store.channel(record["id"])["latest_trace"]["evidence"]
+    assert store.order("4812")["notes"] == "Internal operations note only"
 
 
 def test_live_notification_and_next_reply_match_saved_order(erp_system):
     client, headers, store, workflow, hub = erp_system
     channel = WhatsAppChannel(store, workflow, hub)
     record = send(channel, channel.start(), "Where is my order?")
-    record = send(channel, record, "alex@example.com")
+    record = send(channel, record, "aarav@example.com")
     record = send(channel, record, "4812")
 
     class Socket:
@@ -163,7 +164,7 @@ def test_live_notification_and_next_reply_match_saved_order(erp_system):
 def test_automatic_update_does_not_disclose_to_other_customer(erp_system):
     client, headers, store, workflow, hub = erp_system
     channel = WhatsAppChannel(store, workflow, hub)
-    record = send(channel, channel.start(), "casey@example.com")
+    record = send(channel, channel.start(), "ananya@example.com")
     class Socket:
         def __init__(self): self.events = []
         async def send_json(self, event): self.events.append(event)
@@ -178,16 +179,16 @@ def test_full_return_lifecycle_updates_chat_and_order(erp_system):
     response = client.post("/api/studio/returns", headers=headers, json={"order_id": "4813", "item_id": "4813-1", "reason": "Wrong size"})
     assert response.status_code == 200
     record = response.json()
-    assert record["refund_amount"] == 64
+    assert record["refund_amount"] == 1799
     premature = client.patch("/api/studio/returns/" + record["id"], headers=headers, json={"status": "refunded"})
     assert premature.status_code == 409
-    for status in ("approved", "received", "refunded"):
-        assert client.patch("/api/studio/returns/" + record["id"], headers=headers, json={"status": status, "notes": "Internal-only inspection note"}).status_code == 200
+    for status in ("approved", "pickup_scheduled", "received", "refunded"):
+        assert client.patch("/api/studio/returns/" + record["id"], headers=headers, json={"status": status, "notes": "Internal-only inspection note", "pickup_date": "2026-11-09", "pickup_reference": "DEMO-PU-001", "inspection": "passed", "refund_reference": "DEMO-REF-001"}).status_code == 200
     assert store.order("4813")["items"][0]["returned"] is True
     assert store.order("4813")["payment_status"] == "refunded"
     channel = WhatsAppChannel(store, workflow, hub)
     chat = send(channel, channel.start(), "Can I return the Oxford?")
-    chat = send(channel, chat, "alex@example.com")
+    chat = send(channel, chat, "aarav@example.com")
     assert "refund recorded" in chat["messages"][-1]["text"]
     assert "Internal-only" not in chat["messages"][-1]["text"]
     chat = send(channel, chat, "What is the refund status?")
@@ -213,7 +214,7 @@ def test_return_duplicate_quantity_and_authentication_checks(erp_system):
 def test_support_assignment_and_resolution_allow_new_request(erp_system):
     client, headers, store, workflow, hub = erp_system
     channel = WhatsAppChannel(store, workflow, hub)
-    record = send(channel, channel.start(), "alex@example.com")
+    record = send(channel, channel.start(), "aarav@example.com")
     record = send(channel, record, "Please contact support about order 4814")
     ticket = store.records("tickets")[0]
     response = client.patch("/api/studio/tickets/" + ticket["id"], headers=headers, json={"status": "resolved", "assignee": "Store manager", "internal_note": "Customer contacted"})
@@ -237,8 +238,8 @@ def test_live_studio_socket_requires_capability(erp_system):
 def test_customer_contact_does_not_leak_to_model_on_account_switch(erp_system):
     _, _, store, workflow, hub = erp_system
     channel = WhatsAppChannel(store, workflow, hub)
-    record = send(channel, channel.start(), "alex@example.com")
-    record = send(channel, record, "casey@example.com")
+    record = send(channel, channel.start(), "aarav@example.com")
+    record = send(channel, record, "ananya@example.com")
     assert store.session(record["id"])["customer"] == "demo-customer-b"
     assert record["selected_order"] == "4901"
-    assert all("casey@example.com" not in m["content"] for m in store.session(record["id"])["history"])
+    assert all("ananya@example.com" not in m["content"] for m in store.session(record["id"])["history"])

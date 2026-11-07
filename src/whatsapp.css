@@ -1552,3 +1552,112 @@
   border-color: #384a41;
   color: #92bea6;
 }
+/* Native business message media and iOS status details. */
+.wa-product-preview {
+  display: flex;
+  gap: 11px;
+  padding: 8px;
+  border-bottom: 1px solid var(--wa-rule);
+  min-width: 250px;
+  white-space: normal;
+}
+.wa-product-preview > img {
+  width: 77px;
+  height: 91px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #eceae6;
+}
+.wa-product-preview > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  min-width: 0;
+}
+.wa-product-preview small {
+  font-size: 9px;
+  letter-spacing: 0.65px;
+  color: var(--wa-muted);
+  font-weight: 600;
+}
+.wa-product-preview strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.wa-product-preview span {
+  color: var(--wa-muted);
+}
+.wa-product-preview b {
+  font-size: 14px;
+  font-weight: 500;
+}
+.wa-photo-evidence {
+  width: 250px;
+  max-height: 270px;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px;
+  margin: 4px;
+}
+.wa-return-receipt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--wa-rule);
+  color: #007d50;
+  background: #effaf3;
+  border-radius: 9px 9px 0 0;
+}
+.wa-return-receipt > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+.wa-return-receipt span {
+  font-size: 12px;
+}
+.wa-ios-battery {
+  width: 25px;
+  height: 13px;
+  border: 1px solid #25302b70;
+  border-radius: 4px;
+  margin-left: 2px;
+  background: linear-gradient(to right, #26322b 85%, transparent 85%);
+  box-shadow: inset 0 0 0 1px var(--wa-bg);
+}
+.wa-ios-battery:after {
+  content: "";
+  width: 2px;
+  height: 5px;
+  background: #25302b70;
+  position: absolute;
+  right: -4px;
+  border-radius: 0 2px 2px 0;
+}
+.wa-ios-battery > small {
+  position: static;
+  color: white;
+  width: 100%;
+  text-align: center;
+  font-size: 9px;
+  line-height: 12px;
+  letter-spacing: -0.5px;
+}
+.wa-business-actions button {
+  min-height: 41px;
+  padding: 10px 8px;
+  font-size: 14px;
+}
+.wa-bubble {
+  max-width: 89%;
+}
+.wa-message-row {
+  padding: 0 4px;
+}
+.wa-attachment-actions {
+  grid-template-columns: repeat(2, 1fr);
+}

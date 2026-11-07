@@ -14,7 +14,8 @@ The management decision is **where automation can safely remove waiting and repe
 | Order status and returns dominate | Assignment fact; exact mix unspecified | Prioritize two intents; do not invent their percentage |
 | Answers must use a live order system | Assignment requirement | Each order-specific answer needs a fresh authorized read |
 | Actionable advice for an owner, demonstrated by a prototype | Assignment requirement | Show feasibility, costs, tradeoffs, and operating ownership |
-| US retailer; English; WhatsApp; median 20-word message | Draft assumptions | English-first, short responses, channel adapter |
+| India store; INR; WhatsApp; detailed customer replies | User product decisions after the draft | Supersede the draft's US locale; use Asia/Kolkata and INR |
+| English; median 20-word incoming message | Draft assumptions | English-first channel adapter; message length unmeasured |
 | Five agents; Mon–Sat 09:00–18:00 | Draft assumption; business timezone unknown | Queue design and explicit after-hours state |
 | First response usually 14–20 hours; peaks 48 hours | Draft estimate, unmeasured | Validate with ticket timestamps before claiming improvement |
 | 25% follow-ups; 35% outside business hours | Draft estimates | Measure cases and messages separately; percentages can overlap |
@@ -70,7 +71,7 @@ A useful-answer timer stops when the customer receives the requested fact or an 
 
 - Replace “ask for order number or phone number” with “identify the order, then verify that the customer can access it.” A typed phone number proves nothing about ownership.
 - Explain that open weights improve portability but do not remove hosting, integration, or operations dependence.
-- Evaluate US processing at the **deployment/provider level**; it is not an inherent model property and the US location of customers alone does not establish a legal requirement.
+- Evaluate the selected processing region at the **deployment/provider level**. The current store is in India; model choice alone does not establish a data boundary.
 - Separate monthly messages, unique cases, model calls, and resolved cases before costing.
 - Five people × nine hours gives 45 scheduled person-hours. Breaks, meetings, and occupancy affect productive capacity. The implied 6.75 minutes per query from 45 hours / 400 queries is a consistency check, not a measured handle time.
 - Treat additional evening/weekend staffing as a costed alternative. The draft's assertion that hiring cannot address after-hours service is too strong; scheduling can change coverage.

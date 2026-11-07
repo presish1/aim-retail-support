@@ -25,6 +25,7 @@ export interface Product {
   name: string;
   price: number;
   color: string;
+  image?: string;
 }
 export interface Item {
   item_id: string;
@@ -38,6 +39,7 @@ export interface Item {
   delivered_at: string | null;
   final_sale: boolean;
   returned: boolean;
+  image?: string;
 }
 export interface Order {
   order_id: string;
@@ -71,6 +73,18 @@ export interface ReturnRecord {
   refund_amount: number;
   created_at: string;
   updated_at: string;
+  source?: string;
+  condition?: string;
+  tags?: string;
+  photos?: { url: string; id: string }[];
+  pickup_address?: string;
+  pickup_preference?: string;
+  pickup_date?: string;
+  pickup_reference?: string;
+  inspection?: string;
+  refund_reference?: string;
+  review_required?: boolean;
+  public_reason?: string;
 }
 export interface Ticket {
   id: string;
@@ -103,7 +117,14 @@ export interface ConversationDetail {
   stage: string;
   verification_code: string | null;
   latest_trace: Trace | null;
-  messages: { id: string; role: string; text: string; at: string }[];
+  messages: {
+    id: string;
+    role: string;
+    text: string;
+    at: string;
+    media?: { url: string };
+    product?: { image?: string; name: string; amount: number; variant: string };
+  }[];
 }
 export interface Activity {
   id: string;
@@ -166,6 +187,7 @@ export const labels: Record<string, string> = {
   refunded: "Refunded",
   requested: "Requested",
   approved: "Approved",
+  pickup_scheduled: "Pickup scheduled",
   declined: "Declined",
   received: "Received",
   queued: "Open",
@@ -185,7 +207,7 @@ export const name = (customer?: Customer) =>
     ? `${customer.first_name} ${customer.last_name || ""}`.trim()
     : "Unknown customer";
 export const money = (value = 0) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
     value,
   );
 export const day = (value?: string | null) =>

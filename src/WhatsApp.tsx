@@ -3,7 +3,6 @@ import type { FormEvent, ReactNode } from "react";
 import {
   ArrowUp,
   BadgeCheck,
-  BatteryFull,
   Camera,
   CheckCheck,
   ChevronLeft,
@@ -38,6 +37,17 @@ interface ChatMessage {
   actions?: Action[];
   in_reply_to?: string;
   delivery?: Delivery;
+  product?: {
+    image?: string;
+    name: string;
+    variant: string;
+    amount: number;
+    quantity: number;
+    order_id?: string;
+    status?: string;
+  } | null;
+  receipt?: { id: string; status: string; amount: number };
+  media?: { url: string };
 }
 interface ChannelState {
   type: string;
@@ -96,6 +106,46 @@ function Bubble({
       }
     >
       <div className="wa-bubble">
+        {message.media && (
+          <img
+            className="wa-photo-evidence"
+            src={message.media.url}
+            alt="Attached return photo"
+          />
+        )}
+        {message.product && (
+          <div className="wa-product-preview">
+            {message.product.image && (
+              <img src={message.product.image} alt={message.product.name} />
+            )}
+            <div>
+              <small>
+                {message.product.order_id
+                  ? `ORDER #${message.product.order_id}`
+                  : "YOUR ITEM"}
+              </small>
+              <strong>{message.product.name}</strong>
+              <span>
+                {message.product.variant} · Qty {message.product.quantity}
+              </span>
+              <b>
+                {new Intl.NumberFormat("en-IN", {
+                  style: "currency",
+                  currency: "INR",
+                }).format(message.product.amount)}
+              </b>
+            </div>
+          </div>
+        )}
+        {message.receipt && (
+          <div className="wa-return-receipt">
+            <RefreshCw size={23} />
+            <div>
+              <strong>{message.receipt.id}</strong>
+              <span>{message.receipt.status}</span>
+            </div>
+          </div>
+        )}
         <div className="wa-bubble-body">
           <WhatsAppText text={message.text} />
           <span className="wa-time-space" aria-hidden="true">
@@ -234,8 +284,11 @@ export default function WhatsAppDemo() {
   const pending = useRef(new Map<string, { id: string; text: string }>());
   const busyRef = useRef(false);
   const composer = useRef<HTMLTextAreaElement>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const deviceStage = useRef<HTMLElement>(null);
   const scroll = useRef<HTMLDivElement>(null);
+  const lastScrolledMessage = useRef("");
   const reconnectRef = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -406,7 +459,27 @@ export default function WhatsAppDemo() {
     return () => clearInterval(timer);
   }, []);
   useEffect(() => {
-    if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
+    const container = scroll.current;
+    if (!container) return;
+    const last = messages.at(-1);
+    const row = [
+      ...container.querySelectorAll<HTMLElement>(".wa-message-row"),
+    ].at(-1);
+    if (
+      last &&
+      last.id !== lastScrolledMessage.current &&
+      last.role === "assistant" &&
+      row &&
+      row.offsetHeight > container.clientHeight - 35
+    ) {
+      container.scrollTop +=
+        row.getBoundingClientRect().top -
+        container.getBoundingClientRect().top -
+        12;
+    } else if (typing || last?.id !== lastScrolledMessage.current || keyboard) {
+      container.scrollTop = container.scrollHeight;
+    }
+    lastScrolledMessage.current = last?.id || "";
   }, [messages, typing, keyboard, chatList]);
   useEffect(() => {
     if (composer.current) {
@@ -424,10 +497,33 @@ export default function WhatsAppDemo() {
     return () => window.removeEventListener("keydown", close);
   }, [sheet]);
 
+  async function uploadPhoto(file?: File) {
+    if (!file || !session || busyRef.current || uploading) return;
+    setSheet(null);
+    setUploading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/whatsapp/photo", {
+        method: "POST",
+        headers: { "X-Demo-Session": session, "Content-Type": file.type },
+        body: file,
+      });
+      if (!response.ok) {
+        const body = await response.json();
+        throw new Error(body.detail || "Photo could not be uploaded.");
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setUploading(false);
+      if (photoInput.current) photoInput.current.value = "";
+    }
+  }
   function send(text = input) {
     if (
       !text.trim() ||
       busyRef.current ||
+      uploading ||
       socket.current?.readyState !== WebSocket.OPEN ||
       !session
     )
@@ -471,7 +567,7 @@ export default function WhatsAppDemo() {
     e.preventDefault();
     send();
   }
-  const canSend = !busy && connection === "connected";
+  const canSend = !busy && !uploading && connection === "connected";
   const statusText = typing
     ? "typing…"
     : connection === "connected"
@@ -509,6 +605,14 @@ export default function WhatsAppDemo() {
               <span className="wa-hardware-button wa-volume-down" />
               <span className="wa-hardware-button wa-power" />
               <div className="wa-screen">
+                <input
+                  ref={photoInput}
+                  className="sr-only"
+                  type="file"
+                  aria-label="Attach return photo"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => void uploadPhoto(e.target.files?.[0])}
+                />
                 <div className="wa-island">
                   <span />
                 </div>
@@ -523,7 +627,6 @@ export default function WhatsAppDemo() {
                     <Signal size={17} fill="currentColor" strokeWidth={1.6} />
                     <Wifi size={17} strokeWidth={2.4} />
                     <span className="wa-ios-battery">
-                      <BatteryFull size={28} strokeWidth={1.4} />
                       <small>85</small>
                     </span>
                   </div>
@@ -740,8 +843,8 @@ export default function WhatsAppDemo() {
                           {!input && (
                             <button
                               type="button"
-                              aria-label="Camera attachment information"
-                              onClick={() => setSheet("attachments")}
+                              aria-label="Attach a return photo"
+                              onClick={() => photoInput.current?.click()}
                             >
                               <Camera size={22} strokeWidth={1.5} />
                             </button>
@@ -873,8 +976,19 @@ export default function WhatsAppDemo() {
                             )
                           : sheet === "attachments"
                             ? info(
-                                "How can we help?",
+                                "Share with Threadline",
                                 <div className="wa-attachment-actions">
+                                  <button
+                                    disabled={!canSend || uploading}
+                                    onClick={() => photoInput.current?.click()}
+                                  >
+                                    <Camera size={24} />
+                                    <span>
+                                      {uploading
+                                        ? "Uploading…"
+                                        : "Photo library"}
+                                    </span>
+                                  </button>
                                   <button
                                     onClick={() => send("Where is my order?")}
                                     disabled={!canSend}
@@ -883,9 +997,7 @@ export default function WhatsAppDemo() {
                                     <span>Track order</span>
                                   </button>
                                   <button
-                                    onClick={() =>
-                                      send("Can I return an item?")
-                                    }
+                                    onClick={() => send("Start a return")}
                                     disabled={!canSend}
                                   >
                                     <RefreshCw size={24} />

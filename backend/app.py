@@ -15,10 +15,10 @@ from .model import ModelAdapter
 from .service import SourceError, Workflow, iso_now
 from .store import ROOT, Store
 from .whatsapp import ChannelHub, WhatsAppChannel
-from . import erp
+from . import erp, media
 
 
-app = FastAPI(title="Threadline synthetic support API", version="0.4.0")
+app = FastAPI(title="Threadline synthetic support API", version="0.5.0")
 store = Store()
 adapter = ModelAdapter()
 workflow = Workflow(store, adapter)
@@ -175,9 +175,10 @@ def create_session(body: SessionBody):
 def my_orders(session=Depends(require_session)):
     if not session["customer"]:
         raise HTTPException(403, "Simulated verification required.")
-    if not store.setting("order_api_available"):
-        raise HTTPException(503, "Order API unavailable.")
-    return [{"order_id": o["order_id"], "status": o["status"], "items": [{"item_id": i["item_id"], "name": i["name"]} for i in o["items"]]} for o in store.orders(session["customer"])]
+    try:
+        return [{"order_id": o["order_id"], "status": o["status"], "items": [{"item_id": i["item_id"], "name": i["name"]} for i in o["items"]]} for o in workflow.reads.list_orders(session["customer"])]
+    except SourceError as exc:
+        raise HTTPException(503, {"code": exc.code, "message": exc.message})
 
 
 @app.get("/api/orders/{order_id}")
@@ -239,6 +240,7 @@ async def reset():
 
 
 erp.register(app, lambda: store, lambda: workflow, lambda: channel_hub, require_admin)
+media.register(app, lambda: store, lambda: workflow, lambda: channel_hub)
 
 dist = ROOT / "dist"
 if dist.exists():

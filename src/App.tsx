@@ -85,7 +85,7 @@ function exportOrders(rows: Order[], data: Workspace) {
       "Email",
       "Status",
       "Payment",
-      "Total USD",
+      "Total INR",
       "Delivery city",
       "Created",
     ],
@@ -135,6 +135,16 @@ export default function App() {
     history.replaceState(null, "", "#" + view);
   }, [view]);
   useEffect(() => {
+    const onHash = () => {
+      setView(initialView());
+      setSearch("");
+      setFilter("all");
+      setDetail(null);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  useEffect(() => {
     if (!detail) return;
     const close = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !modal) setDetail(null);
@@ -183,6 +193,23 @@ export default function App() {
       notify("Settings saved");
     } catch (e) {
       setError((e as Error).message);
+    }
+  }
+  const [savingOrder, setSavingOrder] = useState<string | null>(null);
+  async function quickFulfil(order: Order, status: string) {
+    if (status === order.status) return;
+    setSavingOrder(order.order_id);
+    try {
+      await mutate(`/orders/${order.order_id}`, "PATCH", {
+        status,
+        revision: order.revision || 1,
+      });
+      notify(`Order #${order.order_id} · ${labels[status]} saved`);
+    } catch (e) {
+      setError((e as Error).message);
+      await reload();
+    } finally {
+      setSavingOrder(null);
     }
   }
   async function restore() {
@@ -356,7 +383,36 @@ export default function App() {
                 <Badge value={o.payment_status || "paid"} />
               </td>
               <td>
-                <Badge value={o.status} />
+                <div
+                  className={"erp-fulfil-select " + o.status}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="erp-status-dot" />
+                  <select
+                    aria-label={`Fulfilment for order ${o.order_id}`}
+                    value={o.status}
+                    disabled={savingOrder === o.order_id}
+                    onChange={(e) => void quickFulfil(o, e.target.value)}
+                  >
+                    {[
+                      "processing",
+                      "in_transit",
+                      "partially_delivered",
+                      "delivered",
+                      "cancelled",
+                      "returned",
+                    ].map((s) => (
+                      <option
+                        value={s}
+                        key={s}
+                        disabled={s === "partially_delivered" && o.status !== s}
+                      >
+                        {labels[s]}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={12} />
+                </div>
                 {o.carrier_eta_date &&
                   o.carrier_eta_date < data!.settings.demo_now.slice(0, 10) &&
                   o.status !== "delivered" && (
@@ -413,7 +469,7 @@ export default function App() {
         </a>
         <div className="erp-workspace">
           <span className="erp-workspace-dot" />
-          US store<span>USD</span>
+          India store<span>INR</span>
         </div>
         <div className="erp-nav-label">WORKSPACE</div>
         <nav aria-label="Operations navigation">
@@ -882,6 +938,7 @@ export default function App() {
                       "all",
                       "requested",
                       "approved",
+                      "pickup_scheduled",
                       "received",
                       "refunded",
                       "declined",
@@ -1323,7 +1380,7 @@ export default function App() {
                         <dt>Store name</dt>
                         <dd>Threadline</dd>
                         <dt>Currency</dt>
-                        <dd>USD</dd>
+                        <dd>INR</dd>
                         <dt>Policy timezone</dt>
                         <dd>{data.settings.business_timezone}</dd>
                         <dt>Demo clock</dt>
@@ -1450,8 +1507,13 @@ export default function App() {
                 record={selectedReturn}
                 customer={customerFor(data, selectedReturn.customer_id)}
                 save={async (body) => {
-                  await mutate("/returns/" + selectedReturn.id, "PATCH", body);
+                  const next = await mutate<ReturnRecord>(
+                    "/returns/" + selectedReturn.id,
+                    "PATCH",
+                    body,
+                  );
                   notify("Return updated");
+                  return next;
                 }}
                 openOrder={() =>
                   setDetail({ kind: "order", id: selectedReturn.order_id })
@@ -1579,7 +1641,7 @@ export default function App() {
                 <ol>
                   <li>Open the customer chat in a separate tab.</li>
                   <li>
-                    Ask about an order and use <code>alex@example.com</code>.
+                    Ask about an order and use <code>aarav@example.com</code>.
                   </li>
                   <li>Select order #4812, then change its status here.</li>
                   <li>

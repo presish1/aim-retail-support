@@ -69,3 +69,7 @@ Browser checks used the running app and genuine Qwen inference:
 - ERP layouts were checked at 320, 390, 768, 1024, and 1500px; phone layouts at 320, 390, 768, and 1440px. Horizontal table scrolling remains inside its container. No panel, caption, or operator text remains outside the phone in the demo tab.
 
 These are implementation checks against synthetic records, not a held-out model benchmark or evidence of production reliability. The local console capability, contact-match shortcut, and optional code inbox remain demo controls. Real identity, retailer ERP, WhatsApp Business, payment processing, and multi-worker event distribution require a separate integration stage.
+
+## v0.5 extension
+
+The store is now India/INR. Fulfilment has inline order controls and individual item controls. Returns include customer condition/tag answers, uploaded photos, pickup preference, carrier booking, inspection and refund reference. See [the current design and read contracts](10-grounded-india-returns.md). Verification examples above are a historical record of v0.4.

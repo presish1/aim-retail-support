@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from .model import ModelUnavailable
+from .reads import LiveReads, SourceError, read_audit
 
 
 def iso_now():
@@ -16,28 +17,17 @@ def parse_time(value):
 
 
 def date_label(value):
-    return datetime.fromisoformat(value[:10]).strftime("%d %B").lstrip("0")
-
-
-class SourceError(Exception):
-    def __init__(self, code, message):
-        self.code, self.message = code, message
+    date = parse_time(value).astimezone(ZoneInfo("Asia/Kolkata")) if "T" in value else datetime.fromisoformat(value)
+    return date.strftime("%d %B").lstrip("0")
 
 
 class Workflow:
     def __init__(self, store, model):
         self.store, self.model = store, model
+        self.reads = LiveReads(store)
 
     def read_order(self, customer, order_id):
-        # Ownership is checked in the service, never by the model.
-        order = self.store.order(order_id)
-        if not customer or not order or order["customer_id"] != customer:
-            raise SourceError("INACCESSIBLE_ORDER", "I couldn't find an accessible order with those details. Check the number or contact support.")
-        if not self.store.setting("order_api_available"):
-            raise SourceError("ORDER_SERVICE_UNAVAILABLE", "I can't check your order right now because the order service is unavailable. I can pass your question to support.")
-        if self.store.setting("feed_health") == "lagging":
-            raise SourceError("ORDER_DATA_LAGGING", "The order system is responding, but its delivery feed is delayed. I can't confirm the latest status. I can ask support to check.")
-        return {**order, "fetched_at": iso_now(), "source": "Synthetic order API / SQLite"}
+        return self.reads.get_order(customer, order_id)
 
     def baseline(self, message, context, history):
         text = message.lower()
@@ -69,12 +59,20 @@ class Workflow:
 
     def return_result(self, order, item, customer_words):
         customer_words = customer_words.replace("never worn", "unworn")
-        policy = self.store.setting("policy")
-        existing = self.store.return_for_item(order["order_id"], item["item_id"])
+        existing = self.reads.get_return(order["customer_id"], order["order_id"], item["item_id"])
         if existing:
-            summaries = {"requested": "is awaiting review", "approved": "has been approved", "declined": "was declined", "received": "has been received by the store", "refunded": "has a refund recorded in the order system"}
+            summaries = {"requested": "is awaiting review", "approved": "has been approved; a pickup has not yet been booked", "pickup_scheduled": "has a pickup scheduled", "declined": "was declined", "received": "has been received by the store for inspection", "refunded": "has a refund recorded in the order system"}
             message = f"Return {existing['id']} for {item['name']} {summaries[existing['status']]}."
+            if existing.get("pickup_slot"):
+                message += " Pickup: " + existing["pickup_slot"] + "."
+            if existing["status"] == "refunded":
+                message += f" Recorded refund: ₹{existing['refund_amount']:,.2f}. Your bank's credit time isn't available in this system."
+                if existing.get("refund_reference"):
+                    message += " Refund reference: " + existing["refund_reference"] + "."
+            if existing["status"] == "declined" and existing.get("public_reason"):
+                message += " Reason: " + existing["public_reason"]
             return {"decision": "existing_return", "reason": "Return " + existing["status"], "message": message, "policy_version": order["policy_version"], "return_id": existing["id"], "return_status": existing["status"], "deadline": None, "item_id": item["item_id"], "item_name": item["name"]}
+        policy = self.reads.get_policy(order["policy_version"])
         if order["policy_version"] != policy["version"]:
             return {"decision": "review_required", "reason": "Policy version unavailable", "message": "I can't verify which return policy applies to this purchase. Support needs to review it.", "policy_version": order["policy_version"]}
         result = {"policy_version": policy["version"], "deadline": None, "item_id": item["item_id"], "item_name": item["name"]}
@@ -155,6 +153,7 @@ class Workflow:
 
     async def chat(self, session_id, message, mode):
         started = time.perf_counter()
+        read_audit.set([])
         session = self.store.session(session_id)
         if not session:
             raise ValueError("Session expired. Start a new demo session.")
@@ -188,7 +187,9 @@ class Workflow:
             tool = proposal["name"]
             args = proposal["arguments"]
             # Explicit references take precedence over model guesses and prior context.
-            order_id = self.explicit_order(message) or args.get("order_id") or context["order_id"]
+            order_id = self.explicit_order(message) or context["order_id"]
+            if args.get("order_id") and args["order_id"] != order_id:
+                trace["steps"].append({"name": "Reject unsupported reference", "state": "blocked", "detail": "Model reference was not supplied by the customer or confirmed session context"})
             item_id = args.get("item_id", "")
             # All commercial writes and damage claims go to human review even if misrouted.
             if self.is_return_status(message):
@@ -211,18 +212,24 @@ class Workflow:
                     if not self.store.setting("order_api_available"):
                         result = self.source_failure("ORDER_SERVICE_UNAVAILABLE", "I can't read the order system right now. I can pass your question to support.", "")
                     else:
-                        owned = self.store.orders(session["customer"])
-                        result = {"message": "Which order would you like help with?", "outcome": "CHOOSE_ORDER", "card": None,
-                                  "actions": [{"label": "#" + o["order_id"] + " · " + o["items"][0]["name"], "text": ("Check return for " if tool == "check_return_eligibility" else "Track ") + "order #" + o["order_id"]} for o in owned]}
+                        try:
+                            owned = self.reads.list_orders(session["customer"])
+                            result = {"message": "Which order would you like help with?", "outcome": "CHOOSE_ORDER", "card": None,
+                                      "actions": [{"label": "#" + o["order_id"] + " · " + o["items"][0]["name"], "text": ("Check return for " if tool == "check_return_eligibility" else "Track ") + "order #" + o["order_id"]} for o in owned]}
+                        except SourceError as exc:
+                            result = self.source_failure(exc.code, exc.message, "")
                 else:
                     try:
                         order = self.read_order(session["customer"], order_id)
                         trace["steps"].append({"name": "Authorize & read live", "state": "passed", "detail": f"Order #{order_id} · {order['source']}", "fetched_at": order["fetched_at"]})
                         trace["evidence"] = order
                         if tool == "get_order_status":
+                            self.reads.get_payment(session["customer"], order_id, order["revision"])
                             result = self.status_reply(order)
                         else:
                             items = order["items"]
+                            if item_id and item_id not in message and item_id != context["item_id"]:
+                                item_id = ""
                             if item_id and item_id not in {i["item_id"] for i in items}:
                                 trace["steps"].append({"name": "Validate item reference", "state": "passed", "detail": "Discarded a noncanonical model item label; resolving from the customer's words and owned items"})
                                 item_id = ""
@@ -255,6 +262,7 @@ class Workflow:
             else:
                 result = {"message": "I can help with an order's delivery status, return eligibility, or contacting support. What would you like to do?", "outcome": "CLARIFY", "card": None, "actions": [{"label": "Track an order", "text": "Where is my order?"}, {"label": "Check a return", "text": "Can I return an item?"}, {"label": "Talk to support", "text": "I want to talk to support."}]}
         trace["outcome"] = result["outcome"]
+        trace["reads"] = read_audit.get()
         if result["outcome"] == "INACCESSIBLE_ORDER":
             order_id, item_id = "", ""
         trace["latency_ms"] = round((time.perf_counter() - started) * 1000)

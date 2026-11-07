@@ -1,7 +1,7 @@
 # Threadline
 ### Order & returns support, grounded in the order system
 
-**AI in Management · MBA · Scenario A · Working prototype v0.4 · 7 November 2026**
+**AI in Management · MBA · Scenario A · Working prototype v0.5 · 7 November 2026**
 
 > Recommend a small, supervised AI service that answers routine post-purchase questions using current order records, checks return eligibility with explicit business rules, and hands exceptions to a person with the context attached.
 
@@ -17,11 +17,17 @@ Open **http://127.0.0.1:5173** for the ERP. It includes searchable order and cus
 
 Open **http://127.0.0.1:5173/whatsapp**, or use **Open customer chat** in the ERP header. This tab contains only the iPhone mockup. Operators manage settings and inspect conversations in the ERP.
 
-Ask “Where is my order?”, then supply **alex@example.com**, **+1 202 555 0147**, or **CUS-1001**. The default demo setting matches an existing account directly. An unknown contact gets an explicit account-not-found reply and is not asked for a code. **casey@example.com** is a second fictional customer. Add a new customer and order in the ERP to test a new account end to end.
+Ask “Where is my order?”, then supply **aarav@example.com**, **+91 90000 00101**, or **CUS-1001**. The default demo setting matches an existing account directly. An unknown contact gets an explicit account-not-found reply and is not asked for a code. **ananya@example.com** is a second fictional customer. Add a new customer and order in the ERP to test a new account end to end.
 
 Saving a selected order's status, carrier estimate, or tracking details sends a source-backed update to its connected customer chat. A subsequent AI request reads the database again. The ERP also refreshes through its own WebSocket when messages or records change. [Read the ERP design and verification notes](docs/09-erp-workspace.md).
 
 ![Phone-only customer conversation](design/whatsapp-phone-only.png)
+
+## India store and guided returns
+
+Catalogue prices are illustrative INR prices; policy and delivery dates use IST. Customer replies include product photographs, order details, payment status, and useful reply buttons. Return intake collects the item, reason, condition, tags, optional photos, quantity, pickup address and preferred window, then asks for explicit submission. The ERP continues through approval, carrier booking, receipt, inspection and recorded refund. No carrier booking or payment is executed.
+
+The [v0.5 design and read contracts](docs/10-grounded-india-returns.md) explain the factual read boundary, failure cases, return journey and demo script. Photos and credits are bundled under [public/products](public/products/credits.json).
 
 ## Run the prototype
 
@@ -41,7 +47,7 @@ Ollama must be running. The dev command starts both Vite and FastAPI; customers,
 
 For a built frontend served by FastAPI alone: `npm run build`, then `npm start`, then open `http://127.0.0.1:8000`.
 
-Optional: copy `.env.example` to `.env` to configure another local model or compatible hosted inference endpoint. Environment variables take precedence. Keys stay on the backend; never commit `.env`. Production US processing remains a deployment gate, not a claim about the local classroom demo.
+Optional: copy `.env.example` to `.env` to configure another local model or compatible hosted inference endpoint. Environment variables take precedence. Keys stay on the backend; never commit `.env`. The user-selected store region is India. A production processing region and data handling terms still need an owner decision.
 
 ```sh
 npm test
@@ -49,7 +55,7 @@ npm run build
 .venv/bin/python evaluation/run_smoke.py --output artifacts/local/model-smoke.json
 ```
 
-**First demo:** open customer chat → ask about an order → use `alex@example.com` → select #4812 → open #4812 in ERP Orders → set Delivered and save → see the order update arrive in chat → ask “Can you check again?” → inspect the conversation and response evidence in ERP Conversations.
+**First demo:** open customer chat → ask about an order → use `aarav@example.com` → select #4812 → find #4812 in ERP Orders → set Delivered in its inline selector → see the order update arrive in chat → ask “Can you check again?” → inspect the conversation and response evidence in ERP Conversations.
 
 The default **Contact match · demo** setting intentionally simplifies identification for a synthetic classroom demo. Optional code verification is available under Settings; its code is visible in ERP Conversations. Neither mode is production authentication. The server binds to loopback. Return and refund records update the synthetic database only; no real payment service, retailer ERP, or WhatsApp account is connected.
 
@@ -68,7 +74,7 @@ Our central design question:
 1. A customer asks, “Where is my order?” or “Can I return the shirt?”
 2. The service verifies access to the purchase and reads its current record.
 3. A small language model interprets the request and selects an allowed tool. Backend rules determine eligibility; structured facts supply dates and status.
-4. The customer receives a short factual answer and a useful next action.
+4. The customer receives a factual reply with product and order details and a useful next action.
 5. Missing data, exceptions, and requests for a person create a handoff with verified context.
 
 **The signature demonstration:** ask about an order, change its status in a separate demo order console, then ask again. The second answer must reflect the new database value. Turn the order API off: the service must admit it cannot check, rather than reuse the earlier answer as current.
@@ -102,7 +108,7 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 | [Evaluation & handoff](docs/06-evaluation-and-handoff.md) | Test design, pilot gates, ownership, and evidence for the slide team |
 | [Implementation & measured checks](docs/07-implementation-status.md) | What works, the actual model, verification evidence, and limits |
 | [WhatsApp customer experience](docs/08-whatsapp-experience.md) | Separate iPhone-style chat, WebSocket architecture, account lookup, and UI references |
-| [ERP workspace](docs/09-erp-workspace.md) | Current operations UI, record workflows, live sync, and v0.4 checks |
+| [ERP workspace](docs/09-erp-workspace.md) | Current operations UI, record workflows, live sync, and v0.5 checks |
 | [Sources](docs/sources.md) | Primary references checked for the model and deployment discussion |
 | [Demo data](data/README.md) | Eight synthetic customers, fourteen sample orders, an illustrative policy, and a fixed demo clock |
 | [Evaluation scenarios](evaluation/scenarios.csv) | Thirty planned checks; no measured results |
@@ -112,7 +118,7 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 - Focus on order status, return eligibility, and useful escalation.
 - Use a browser-based customer chat to simulate the channel in class; treat WhatsApp as the draft's proposed production channel.
 - Demonstrate real reads from a mutable local database behind an API. This proves a live integration pattern, while actual retailer ERP integration remains a production task.
-- Keep the first prototype read-only with respect to retailer orders, payments, and returns. It may create a local support ticket. Eligible customers get a proposed link to the retailer's existing return portal.
+- The model never writes retailer orders or payments. Operators edit synthetic orders; customers explicitly submit return requests through a fixed workflow. Staff records pickup, inspection, and refund decisions.
 - Evaluate a hosted open-weight model against a deterministic baseline. Buy managed inference for the pilot if a suitable deployment is available; avoid committing to GPU infrastructure before measuring the workload.
 - Treat staffing, channel, policy, prices, and benefits as assumptions until verified.
 
@@ -120,6 +126,6 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 
 **Completed:** operations ERP, phone-only customer channel, Qwen3-8B tool selection, persistent customer/order/return records, live updates, return rules, access boundaries, failure controls, deduplicated support requests, conversation evidence, and a rules baseline.
 
-**Verified locally:** 66 backend tests, including new ERP and synchronization checks. Browser checks cover unknown-account recovery, creating a customer and order, real Qwen lookup of that purchase, saved order updates delivered to chat, return processing, support assignment, and layouts at 320–1500px. The [recorded v0.2 smoke run](evaluation/results/local-qwen3-smoke.json) is retained as historical integration evidence. These checks are not a held-out benchmark or proof of production reliability.
+**Verified locally:** 95 backend tests, including source validation, unsupported model references, photo uploads, return consent and refund gates. Browser checks cover unknown-account recovery, creating a customer and order, real Qwen lookup of that purchase, saved order updates delivered to chat, return processing, support assignment, and layouts at 320–1500px. The [recorded v0.2 smoke run](evaluation/results/local-qwen3-smoke.json) is retained as historical integration evidence. These checks are not a held-out benchmark or proof of production reliability.
 
 **Next:** a separate held-out paraphrase/multi-turn evaluation, measured model comparison and cost analysis, then presentation evidence. An actual retailer pilot also needs its real systems, verification, and deployment review.

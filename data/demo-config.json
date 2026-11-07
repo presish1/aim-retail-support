@@ -1,9 +1,16 @@
 {
   "synthetic": true,
   "demo_now": "2026-11-07T12:00:00Z",
-  "business_timezone": "America/New_York",
+  "business_timezone": "Asia/Kolkata",
   "staff_schedule": {
-    "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+    "days": [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday"
+    ],
     "opens_at": "09:00",
     "closes_at": "18:00",
     "holidays": [],

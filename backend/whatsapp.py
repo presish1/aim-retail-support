@@ -14,6 +14,8 @@ import uuid
 from starlette.websockets import WebSocketDisconnect
 
 from .service import date_label, iso_now
+from .reads import SourceError, read_audit
+from .returns_flow import ReturnFlow, choices
 
 
 class ChannelHub:
@@ -53,7 +55,7 @@ class ChannelHub:
             await self.emit(session_id, {"type": "source_changed", "order_id": order_id, "at": iso_now()})
             if not (notify and workflow and order and before):
                 continue
-            changed = any(before.get(key) != order.get(key) for key in ("status", "carrier_eta_date", "carrier", "tracking_reference"))
+            changed = any(before.get(key) != order.get(key) for key in ("status", "carrier_eta_date", "carrier", "tracking_reference", "items"))
             if not changed:
                 continue
             async with self.locks.setdefault(session_id, asyncio.Lock()):
@@ -65,6 +67,8 @@ class ChannelHub:
                 except Exception:
                     continue
                 text = "*Order update · #" + order_id + "*\n\n" + workflow.status_reply(fresh)["message"]
+                if len(fresh["items"]) > 1:
+                    text += "\n\n" + "\n".join(i["name"] + ": " + i["status"].replace("_", " ") for i in fresh["items"])
                 if fresh.get("tracking_reference") and before.get("tracking_reference") != fresh["tracking_reference"]:
                     text += "\nTracking reference: " + fresh["tracking_reference"]
                 trace = {"id": "run-" + uuid.uuid4().hex[:10], "at": iso_now(), "mode": "system", "model": None, "provider": None, "region": "Local system", "usage": {"input_tokens": 0, "output_tokens": 0}, "latency_ms": 0, "outcome": "ORDER_UPDATED", "note": None, "evidence": fresh, "steps": [{"name": "Read current order", "state": "passed", "detail": "Saved order revision " + str(fresh.get("revision", 1))}, {"name": "Send order update", "state": "passed", "detail": "Source-backed notification; no model inference"}]}
@@ -80,6 +84,7 @@ class ChannelHub:
 class WhatsAppChannel:
     def __init__(self, store, workflow, hub):
         self.store, self.workflow, self.hub = store, workflow, hub
+        self.returns = ReturnFlow(store, workflow)
 
     @staticmethod
     def bot_message(text, **extra):
@@ -121,7 +126,7 @@ class WhatsAppChannel:
         international = re.search(r"\+\d[\d ().\-]{7,22}\d", text)
         if international and 10 <= len(re.sub(r"\D", "", international[0])) <= 15:
             return international[0]
-        phone = re.search(r"(?<!\w)(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}(?!\d)", text)
+        phone = re.search(r"(?<!\w)(?:\+?91[\s.\-]?)?[6-9]\d{4}[\s.\-]?\d{5}(?!\d)", text)
         return phone[0] if phone else None
 
     @staticmethod
@@ -185,9 +190,18 @@ class WhatsAppChannel:
 
     async def respond(self, record, text, mode):
         record["latest_trace"] = None
+        if record.get("return_draft"):
+            try:
+                result = self.returns.advance(record, text)
+                if result:
+                    await self.hub.studio_changed("returns")
+                    return self.record_read_trace(record, result, "RETURN_INTAKE")
+            except SourceError as exc:
+                return self.record_read_trace(record, {"text": exc.message, "actions": [{"label": "Ask support", "text": "Please contact support about my return"}]}, exc.code)
         identifier = self.identifier(text)
         if identifier and record["stage"] in ("verified", "choose_order"):
             record.update(stage="contact", selected_order=None, choices=[], pending_request="Where is my order?")
+            record.pop("return_draft", None)
             self.store.bind_customer(record["id"], None)
         if record["stage"] == "contact":
             if identifier:
@@ -228,7 +242,8 @@ class WhatsAppChannel:
                 explicit = choices[int(number[1]) - 1]
             if explicit:
                 record.update(stage="verified", selected_order=explicit, choices=[])
-                return await self.run_workflow(record, record["pending_request"] + f"\nOrder reference: #{explicit}.", mode)
+                question = text if re.search(r"\b(return|track|where|refund|delivery|status)\b", text, re.I) else record["pending_request"]
+                return await self.run_workflow(record, question + f"\nOrder reference: #{explicit}.", mode)
             if re.search(r"\b(support|person|agent|human)\b", text, re.I):
                 record["stage"] = "verified"
                 return await self.run_workflow(record, text, mode)
@@ -260,6 +275,10 @@ class WhatsAppChannel:
         if not session or not session["customer"]:
             record["stage"] = "contact"
             return "Let's reconnect your account. What email address or mobile number did you use at checkout?"
+        if text in ("Choose another order", "Start a return", "My orders"):
+            record.update(selected_order=None, choices=[])
+            self.store.save_history(record["id"], [])
+            text = "Return an item" if text == "Start a return" else "List my orders"
         if re.search(r"\b(support|person|agent|human|refund|address|damaged|faulty|cancel)\b", text, re.I) and not self.workflow.is_return_status(text):
             return await self.run_workflow(record, text, mode)
         explicit = self.workflow.explicit_order(text)
@@ -270,7 +289,10 @@ class WhatsAppChannel:
             return {"text": "I can't reach the order system right now, so I can't confirm your orders. Would you like me to ask support to help?", "actions": [{"label": "Contact support", "text": "Please contact support about my order."}]}
         if self.store.setting("feed_health") != "healthy":
             return {"text": "Our delivery feed is delayed. I can't confirm the latest order details right now. Support can help check.", "actions": [{"label": "Contact support", "text": "Please contact support about my order."}]}
-        owned = self.store.orders(session["customer"])
+        try:
+            owned = self.workflow.reads.list_orders(session["customer"])
+        except SourceError as exc:
+            return {"text": exc.message}
         returns = re.search(r"return|refund|size|too (big|small)|send.*back", text, re.I)
         named = [o for o in owned if any(any(w in text.lower() for w in i["name"].lower().split() if len(w) > 4) for i in o["items"])]
         candidates = named or ([o for o in owned if o["status"] not in ("delivered", "cancelled")] if not returns else owned)
@@ -286,6 +308,18 @@ class WhatsAppChannel:
         return {"text": f"I found {len(candidates)} {label} on your account:\n\n" + "\n\n".join(lines) + "\n\nWhich one would you like help with?", "actions": [{"label": f"Order #{o['order_id']}", "text": f"Order #{o['order_id']}"} for o in candidates]}
 
     async def run_workflow(self, record, text, mode):
+        if re.search(r"\breturn\b", text, re.I) and not self.workflow.is_return_status(text) and not re.search(r"\b(support|person|agent|human)\b", text, re.I):
+            order_id = self.workflow.explicit_order(text) or record.get("selected_order")
+            if order_id:
+                try:
+                    read_audit.set([])
+                    result = self.returns.begin(record, order_id, text)
+                    record["selected_order"] = order_id
+                    return self.record_read_trace(record, result, "RETURN_INTAKE")
+                except SourceError as exc:
+                    if exc.code == "INACCESSIBLE_ORDER":
+                        record["selected_order"] = None
+                    return self.record_read_trace(record, {"text": exc.message}, exc.code)
         await self.hub.emit(record["id"], {"type": "typing", "active": True, "stage": "checking_order_system"})
         reply = await self.workflow.chat(record["id"], text, mode)
         record["latest_trace"] = reply["trace"]
@@ -295,19 +329,35 @@ class WhatsAppChannel:
         if reply["outcome"] == "INACCESSIBLE_ORDER":
             record["selected_order"] = None
         message = reply["message"]
+        product = None
         if card and card["type"] == "order":
             details = []
             for item in card["items"]:
+                if len(card["items"]) == 1:
+                    continue  # The catalog preview already shows this item's variant and quantity.
                 variant = " · ".join(str(item[k]) for k in ("size", "color") if item.get(k))
-                details.append(f"*{item['name']}* × {item.get('quantity', 1)}" + ("\n" + variant if variant else ""))
-            details.append("*Carrier:* " + card["carrier"])
+                delivery = item["status"].replace("_", " ").capitalize() + (" · " + date_label(item["delivered_at"]) if item.get("delivered_at") else "")
+                details.append(f"*{item['name']}* × {item.get('quantity', 1)}" + ("\n" + variant if variant else "") + "\n" + delivery)
+            details.append("*Carrier:* " + (card["carrier"] or "Not assigned yet"))
             if card.get("tracking_reference"):
                 details.append("*Tracking ref:* " + card["tracking_reference"])
             if card.get("ordered_at"):
                 details.append("*Ordered:* " + date_label(card["ordered_at"]))
             if card.get("order_total") is not None:
-                details.append(f"*Order total:* {card.get('currency', 'USD')} {card['order_total']:.2f}")
+                details.append(f"*Order total:* ₹{card['order_total']:,.2f}")
+            details.append("*Payment:* " + card["payment_status"].replace("_", " ").capitalize())
             if card.get("shipping_city"):
                 details.append("*Delivering to:* " + card["shipping_city"])
             message += "\n\n" + "\n".join(details)
-        return {"text": message, "actions": reply.get("actions", []), "outcome": reply["outcome"]}
+            first = card["items"][0]
+            product = {"image": first.get("image"), "name": first["name"], "variant": " · ".join([first.get("size", ""), first.get("color", "")]), "amount": first["unit_price"], "quantity": first["quantity"], "order_id": card["order_id"], "status": card["status"].replace("_", " ").capitalize()}
+        actions = reply.get("actions", [])
+        if card and card["type"] == "order":
+            actions = [{"label": "Refresh order", "text": "Check latest status for order #" + card["order_id"]}, {"label": "Start a return", "text": "Start a return"}, {"label": "Other orders", "text": "Choose another order"}]
+        return {"text": message, "product": product, "actions": actions, "outcome": reply["outcome"]}
+
+    def record_read_trace(self, record, reply, outcome):
+        trace = {"id": "run-" + uuid.uuid4().hex[:10], "at": iso_now(), "mode": "system", "model": None, "provider": None, "region": "Local system", "usage": {"input_tokens": 0, "output_tokens": 0}, "latency_ms": 0, "outcome": outcome, "reads": read_audit.get() or [], "steps": [{"name": "Validated return workflow", "state": "passed" if outcome == "RETURN_INTAKE" else "blocked", "detail": "Explicit customer answers; fresh ownership and policy reads; no model-written facts" if outcome == "RETURN_INTAKE" else outcome}]}
+        record["latest_trace"] = trace
+        self.store.save_trace(trace, record["id"])
+        return {**reply, "outcome": outcome}

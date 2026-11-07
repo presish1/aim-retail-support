@@ -38,6 +38,8 @@ def test_fresh_source_changes_next_answer(system):
     store = system[0]
     order = store.order("4812")
     order["status"] = "delivered"
+    for item in order["items"]:
+        item.update(status="delivered", delivered_at=store.setting("demo_now"))
     store.save_order(order)
     second = ask(system, "Can you check again?")
     assert second["card"]["status"] == "delivered"
@@ -91,7 +93,7 @@ def test_never_worn_with_tags_is_initial_eligibility(system):
     assert ask(system, "Return order 4813; never worn with tags attached")["outcome"] == "RETURN_ELIGIBLE"
 
 
-@pytest.mark.parametrize("clock,expected", [("2026-11-25T04:59:59Z", "RETURN_ELIGIBLE"), ("2026-11-25T05:00:00Z", "RETURN_INELIGIBLE")])
+@pytest.mark.parametrize("clock,expected", [("2026-11-24T18:29:59Z", "RETURN_ELIGIBLE"), ("2026-11-24T18:30:00Z", "RETURN_INELIGIBLE")])
 def test_inclusive_new_york_deadline(system, clock, expected):
     system[0].set_setting("demo_now", clock)
     result = ask(system, "Return 4813, unworn with tags attached")
@@ -120,7 +122,8 @@ def test_unknown_policy_is_review_not_guess(system):
     order = store.order("4813")
     order["policy_version"] = "missing"
     store.save_order(order)
-    assert ask(system, "Return 4813")["outcome"] == "RETURN_REVIEW_REQUIRED"
+    result = ask(system, "Return 4813")
+    assert result["outcome"] == "POLICY_UNAVAILABLE" and result["card"] is None
 
 
 def test_lagging_feed_blocks_current_claim(system):
@@ -197,7 +200,7 @@ def test_no_commercial_write_tools(system):
 def test_after_hours_queue_is_not_human_promise(system):
     system[0].set_setting("demo_now", "2026-11-08T16:00:00Z")
     result = ask(system, "Ask support to review return for 4814")
-    assert "Monday, 09 November at 09:00 EST" in result["message"]
+    assert "Monday, 09 November at 09:00 IST" in result["message"]
 
 
 def test_simultaneous_ticket_deduplication(system):

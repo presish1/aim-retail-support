@@ -23,10 +23,10 @@ Open the WhatsApp demo from the studio header or visit **http://127.0.0.1:5173/w
 
 | Demo customer | Checkout email | Checkout phone | Orders |
 | --- | --- | --- | --- |
-| Alex | `alex@example.com` | `+1 202 555 0147` | 4812–4816; initially two active orders |
-| Casey | `casey@example.com` | `+1 202 555 0186` | 4901 |
+| Aarav | `aarav@example.com` | `+91 90000 00101` | 4812–4816; initially two active orders |
+| Ananya | `ananya@example.com` | `+91 90000 00102` | 4901 |
 
-Start with “Where is my order?” and provide a known contact. For Alex, choose #4812. The reply includes available item/variant, carrier, estimate, synthetic tracking reference, purchase date, total, and destination city. These are all database fields, not model inventions.
+Start with “Where is my order?” and provide a known contact. For Aarav, choose #4812. The reply includes available item/variant, carrier, estimate, synthetic tracking reference, purchase date, total, and destination city. These are all database fields, not model inventions.
 
 To prove the integration, keep the phone tab open and change #4812 in ERP Orders. Once that purchase is selected, a source-backed order update arrives in the conversation. Ask “Can you check again?” to perform a fresh tool read. The operator-triggered update is a deterministic system message, distinct from model inference.
 
@@ -79,3 +79,5 @@ The current suite has **66 passing backend tests**, covering ERP workflows as we
 Browser checks used genuine Qwen inference for the complete contact → verification → order selection → rich reply journey. A second studio tab changed a saved record; the phone received a WebSocket event and its next reply reflected the new source value. Reload restored the conversation. Light/dark themes, keyboard, chat-list navigation, and responsive layouts were inspected.
 
 This remains a local synthetic prototype. A real WhatsApp Business integration would use Meta's messaging APIs and incoming webhooks in a channel adapter, with the same support workflow underneath. It would not replace the native WhatsApp client with this browser mockup. See the [official developer hub](https://whatsappbusiness.com/developers/developer-hub/) and [Meta-hosted receiving-messages documentation](https://whatsapp.github.io/WhatsApp-Nodejs-SDK/receivingMessages/) for that integration pattern; no Meta account, production credential, email/SMS service, or retailer ERP is connected here.
+
+The current India store adds product photo messages, real local photo uploads and guided return submission. See [v0.5 return design](10-grounded-india-returns.md) for the current workflow.

@@ -3,14 +3,23 @@
   "version": "demo-returns-v1",
   "effective_from": "2026-01-01",
   "description": "Illustrative initial return eligibility; retailer inspection and exception review remain separate.",
-  "timezone": "America/New_York",
+  "timezone": "Asia/Kolkata",
   "window_calendar_days_after_item_delivery": 30,
   "deadline_inclusive_end_of_local_day": true,
-  "required_condition": ["unworn", "tags_attached"],
+  "required_condition": [
+    "unworn",
+    "tags_attached"
+  ],
   "customer_stated_condition_is_provisional": true,
   "final_sale_ordinary_return_allowed": false,
   "damaged_or_faulty_item_action": "human_review",
   "missing_or_unknown_policy_action": "human_review",
   "refund_approval_enabled": false,
-  "create_return_enabled": false
+  "create_return_enabled": true,
+  "return_submission_requires_confirmation": true,
+  "pickup_windows": [
+    "Weekday \u00b7 10 am\u20132 pm",
+    "Weekday \u00b7 2\u20136 pm"
+  ],
+  "refund_timing": "Bank credit time is unavailable; support confirms after inspection."
 }
