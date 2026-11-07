@@ -1,136 +1,127 @@
-# 03 · Architecture
+# 03 — Architecture: current MVP and proposed integrations
 
-## Structure and responsibilities
+**Current local implementation: v0.5, code baseline `d49563f`.** The [system guide](../SYSTEM_GUIDE.md) is the business explanation; this reference maps it to the code. The production diagram is a proposal.
 
-Use one bounded workflow and a small set of authorized tools. A request can perform lookup, optional policy evaluation, then answer or hand off. Set an iteration limit and a whole-request deadline. A complex request should leave the automated path predictably.
+## The design decision
+
+Use a bounded workflow and a small set of tools. The model interprets supported requests; backend code owns identity, permissions, calculations, writes and final transactional responses. Return intake is an explicit state machine. There is no autonomous multi-agent framework, arbitrary SQL tool, vector database or project fine-tuning in the current implementation.
+
+## Current deployment
 
 ```mermaid
-flowchart TB
-    subgraph Experience[Experience layer]
-      CHAT[Customer chat / future WhatsApp adapter]
-      INBOX[Agent inbox]
-      ADMIN[Separate demo order console]
+flowchart LR
+    subgraph Browser[Browser experiences]
+        PHONE[Phone at /whatsapp]
+        ERP[ERP at /]
     end
-    subgraph Service[Application service]
-      ID[Verified session & customer binding]
-      FLOW[Intent, clarification & bounded workflow]
-      MODEL[Model adapter: intent & tool proposals]
-      GATE[Tool validation & per-order authorization]
-      RULE[Return rules & policy version resolver]
-      FACT[Typed facts, freshness checks & response renderer]
-      AUDIT[Redacted event log & evaluation trace]
+    subgraph Local[Local laptop - synthetic records]
+        V[Vite :5173]
+        API[FastAPI :8000]
+        WF[Workflow and return state machine]
+        READ[Authorized reads and rules]
+        DB[(SQLite)]
+        FILES[Local photo files]
+        HUB[In-process WebSocket hub]
+        O[Ollama :11434]
     end
-    subgraph Systems[Operational sources]
-      ORDER[Order-system API]
-      DB[(Demo SQLite / real retailer ERP)]
-      POLICY[Approved structured policy registry]
-      TICKET[Support ticket store / existing helpdesk]
-    end
-    CHAT --> ID --> FLOW
-    FLOW <--> MODEL
-    FLOW --> GATE
-    GATE --> ORDER <--> DB
-    GATE --> RULE
-    RULE --> POLICY
-    RULE --> ORDER
-    GATE --> TICKET --> INBOX
-    ORDER --> FACT
-    RULE --> FACT
-    TICKET --> FACT
-    FACT --> CHAT
-    FLOW --> AUDIT
-    GATE --> AUDIT
-    FACT --> AUDIT
-    ADMIN -->|Demo-only, restricted writes| ORDER
+    PHONE --> V
+    ERP --> V
+    V -->|HTTP and WebSocket /api proxy| API
+    API --> WF
+    WF -->|Bounded intent/tool proposal| O
+    WF --> READ --> DB
+    API -->|Operator commands| DB
+    API --> FILES
+    API --> HUB
+    HUB --> PHONE
+    HUB --> ERP
 ```
 
-### What the model owns
+`npm run dev` starts Vite and FastAPI on loopback. A built frontend can instead be served by FastAPI at port 8000. The read layer currently calls SQLite in-process; it is not an outbound HTTP request to a real retailer. These are layers of one application, not separately deployed microservices.
 
-Recognize paraphrases, identify order/item references, ask for missing information, and propose an allowed tool. It may write a handoff summary from supplied evidence. It cannot select the customer's authenticated identity, query arbitrary SQL, calculate return deadlines, or authorize commercial actions.
+## Layer and source map
 
-### What the backend owns
+| Layer | Responsibility | Source |
+| --- | --- | --- |
+| Experience | Operator tables/forms, phone messages, photos and reply buttons | [App.tsx](../src/App.tsx), [OperationsForms.tsx](../src/OperationsForms.tsx), [WhatsApp.tsx](../src/WhatsApp.tsx) |
+| API/channel boundary | Request validation, synthetic sessions, local origins/capabilities, sockets, media | [app.py](../backend/app.py), [media.py](../backend/media.py) |
+| Conversation | Contact/code stages, order choice, message IDs, retry/resume and pending intent | [whatsapp.py](../backend/whatsapp.py) |
+| Workflow | One tool proposal, reference handling, rules/fallback, source errors, tickets, templates | [service.py](../backend/service.py) |
+| AI adapter | Four schemas, inference configuration, proposal validation | [model.py](../backend/model.py) |
+| Read/rule boundary | Ownership, healthy source, validated records and exact policy version | [reads.py](../backend/reads.py), `Workflow.return_result` in [service.py](../backend/service.py) |
+| Return application | Draft states, explicit answers and final RMA submission | [returns_flow.py](../backend/returns_flow.py) |
+| Operations/persistence | Customer/order/return/ticket commands; revisions and transactions | [erp.py](../backend/erp.py), [store.py](../backend/store.py) |
+| Synchronization/evidence | Source-backed pushes, saved conversations, workspace reload and traces | [whatsapp.py](../backend/whatsapp.py), [useWorkspace.ts](../src/useWorkspace.ts) |
 
-Session/customer binding, per-order ownership checks, validated tool arguments, source reads, timestamps, policy version selection, item-level calculations, trusted URLs, ticket persistence, rate limits, and answer rendering.
+Fixture JSON seeds/resets SQLite. Runtime answers use current records. The policy is a structured setting; there is no document retrieval pipeline in this MVP.
 
-For the prototype, render transactional facts in approved templates. This makes factual grounding testable and keeps the model's task focused on understanding and routing. Evaluate any future free-text paraphrasing separately; a prompt asking for accuracy is not a factual guarantee.
-
-## Thin prototype deployment
-
-- **UI:** React + TypeScript + Vite; responsive chat, evaluator console, handoff inbox.
-- **Backend:** Python + FastAPI; same-origin API when serving a built frontend.
-- **Data:** SQLite with synthetic customers, orders, items, policies, and tickets.
-- **Inference:** backend-only adapter to an explicitly configured endpoint; expose model ID and mode in the evaluator trace. A rules baseline is a separate labeled mode.
-- **Hosting:** local laptop for class. Any later public demo uses synthetic records and restricted demo controls. Production hosting requires verified region, access controls, and operational ownership.
-
-These were the v0.1 proposed implementation choices. They are now implemented for the local v0.2 prototype; see [implementation status](07-implementation-status.md) for the actual tool subset, inference setup, verification, and remaining limits.
-
-## Minimum tool contracts
-
-The authenticated customer ID is injected by the server and never accepted from model arguments. All tools return `request_id`, `source`, `fetched_at`, and typed outcome codes. Operational records also carry `source_updated_at` and source-health metadata where available.
-
-| Tool | Model-supplied arguments | Server-enforced behavior | Result |
-| --- | --- | --- | --- |
-| `list_my_orders` | None | Read only this session's orders; return minimal summaries | Owned order choices |
-| `get_order_status` | `order_id` | Verify ownership; query current source; validate expected fields | Status, ETA if present, tracking URL, source timestamps |
-| `check_return_eligibility` | `order_id`, `item_id`, stated condition if known | Verify ownership; fresh read; resolve bound policy; calculate in business timezone | Eligible / ineligible / needs information / review required, reasons, deadline, policy version |
-| `get_return_policy` | `order_id` | Verify ownership and resolve applicable version | Approved rule summary and link |
-| `create_support_ticket` | reason enum, `order_id` if known, customer request | Include verified context; persist atomically; deduplicate active handoffs | Ticket ID and actual queue state |
-
-Candidate reason codes include `ORDER_SERVICE_UNAVAILABLE`, `ORDER_DATA_LAGGING`, `DELIVERY_EXCEPTION`, `RETURN_EXCEPTION`, `IDENTITY_HELP`, `UNSUPPORTED_REQUEST`, and `CUSTOMER_REQUESTED`.
-
-The demo administrator uses a different API route/session to update synthetic records or inject failures. Customer tools have no update-order, approve-return, or refund capability.
-
-## Read and answer sequence
+## Order-answer sequence
 
 ```mermaid
 sequenceDiagram
     participant C as Customer
-    participant W as Support workflow
-    participant L as LLM adapter
-    participant T as Authorized tools
-    participant O as Live order API
-    C->>W: Where is order 4812?
-    Note over C,W: Verify session / purchase access first
-    W->>L: Request + allowed tools + minimal context
-    L-->>W: get_order_status(order_id=4812)
-    W->>T: Validate proposal + inject verified identity
-    T->>O: Authorized fresh read
-    alt Valid current response
-      O-->>T: Status + ETA + timestamps
-      T-->>W: Typed facts and evidence
-      W-->>C: Approved factual response + tracking action
-    else Timeout / invalid response / lagging feed
-      O-->>T: Failure or degraded source health
-      T-->>W: Typed unavailable / uncertain outcome
-      W-->>C: Honest uncertainty + handoff option
+    participant CH as Channel/session
+    participant W as Workflow
+    participant M as Model
+    participant R as LiveReads
+    participant DB as SQLite
+    C->>CH: Track selected order 4812
+    CH->>W: Message and confirmed order context
+    W->>M: Tool schemas, IDs and limited recent history
+    M-->>W: Untrusted proposal
+    W->>W: Validate tool and reference provenance
+    W->>R: get_order(session.customer, 4812)
+    R->>DB: Owned record and source controls
+    R-->>W: Validated order at revision N
+    W->>R: get_payment with expected revision N
+    R->>DB: Current payment projection
+    alt Compatible validated reads
+        W->>W: Backend render and evidence persistence
+        W-->>CH: Facts, product data and actions
+        CH-->>C: Saved business message
+    else Unavailable, invalid, inaccessible or changed
+        R-->>W: SourceError
+        W-->>CH: Supported failure or handoff path
+        CH-->>C: No guessed current status
     end
 ```
 
-Every new order-specific request triggers a fresh source read. Earlier conversation history is context, never evidence of current order status. A successful current query does not prove a carrier feed is current: preserve both the fetch time and upstream event/health times. An unchanged order is not automatically stale; classify feed lag using integration health and carrier-event expectations, not just record age.
+Not every phone turn invokes AI. Identification, menu selection, deterministic return intake and source-change notifications have code paths that need no model. A failed model call uses a labeled rules fallback, subject to the same source controls. The model adapter is bounded to one proposal, not repeated self-directed actions.
 
-For the demo, source timestamps are in UTC and the policy date calculation uses `Asia/Kolkata`. The demo clock is injectable; production uses trusted server time. Handle timezone conversion in code. The current implementation extends these original contracts; see [v0.5](10-grounded-india-returns.md).
+## Authority boundaries
 
-## Return decision rules
+- Customer text, photos, addresses and model proposals are untrusted inputs. Reporting a payment or garment condition does not prove it.
+- The server chooses the bound customer ID. Order/item references are resolved from allowed context and owned records. Ambiguity still requires careful selection; heuristics are not a proof of customer intent.
+- Typed validation catches specified bad data; it cannot prove that an operator's or courier's event reflects physical reality.
+- Staff and customer commands have different routes. The local operator capability is an evaluator mechanism, not real staff authentication/RBAC.
+- Return submission belongs to `ReturnFlow`; it is not a model-callable commercial action. Staff records later stages through the ERP. No carrier/payment call exists.
+- Traces/history may contain sensitive data in a real deployment. Current logging is not comprehensively redacted or immutable.
 
-1. Read the current order and selected item after verifying ownership.
-2. Resolve the order's bound policy version; unknown/missing versions require review rather than a fallback guess.
-3. Use that item's delivery timestamp. Partially fulfilled orders require item-level dates.
-4. Check whether the item is already returned, final sale, undelivered, or an exception such as damage. Route damage/fault claims for review instead of blanket denial.
-5. Evaluate the inclusive request deadline and required condition. If condition is unknown, ask; if customer-reported, mark initial eligibility subject to inspection.
-6. Return a typed decision, reason, deadline, and approved next action. A local eligibility result does not approve a refund or override the retailer.
+## Proposed production integration shape
 
-The illustrative policy in this repository is a design fixture, not a real retailer policy or a statement of customer rights.
+```mermaid
+flowchart TB
+    WA[Real WhatsApp] <--> P[Meta Cloud API or selected provider]
+    P <--> EDGE[HTTPS channel adapter]
+    EDGE --> IN[Durable inbox and deduplication]
+    IN --> APP[Bounded application service]
+    STAFF[Authenticated staff portal] --> APP
+    APP --> ID[Customer linking and staff identity]
+    APP <--> MODEL[Approved inference endpoint]
+    APP --> GATE[Authorized business adapters]
+    GATE <--> OMS[Existing commerce / OMS]
+    GATE <--> COURIER[Courier / aggregator]
+    GATE <--> PAY[Payment / refund provider]
+    GATE <--> HELP[Existing helpdesk]
+    APP --> DB[(Workflow state and source projections)]
+    APP --> MEDIA[Private media storage]
+    APP --> OUT[Durable outbox and delivery workers]
+    OUT --> EDGE
+    APP --> OBS[Audit, metrics and incident controls]
+```
 
-## Retrieval choices
+This proposal can remain a modular service. PostgreSQL, a managed queue, Redis or particular hosting products are options to select after discovery; none is installed or mandatory here. Multiple workers require shared event distribution and locks/state beyond the in-process hub.
 
-Use transactional APIs for order facts. A small, versioned, structured registry is enough for the initial return policy. If the retailer later has many policy documents, add retrieval for approved policy passages with effective versions and citations. Keep live order facts out of a document/vector index used as an answer authority. No fine-tuning is proposed for the first prototype.
+Each external system retains field authority. Use live transactional APIs for current order facts; a vector index is not the authority for latest status. Approved document retrieval might later explain a larger policy library, but must preserve effective versions and remain separate from order reads.
 
-## Failure and control design
-
-- **Identity:** order number is a locator. Use existing sign-in or verified contact possession, then enforce ownership on every call. The synthetic demo identity selector must never be described as production authentication.
-- **Model failure:** invalid or unsupported tool proposals cause one controlled clarification or a safe fallback. Limit calls, output tokens, tool loops, and elapsed time. Do not use model-reported confidence as permission to act.
-- **Source failure:** no fabricated status or silent use of cached status. Offer handoff; display a ticket ID only after persistence succeeds. An order lookup failure does not prevent a ticket about an unavailable order.
-- **Prompt injection:** customer text and operational notes are data. Only server-allowlisted tools run, with strict schemas. Do not send free-form order notes unless essential; never execute instructions inside them.
-- **Privacy:** send minimal operational fields to inference. Keep contact addresses, authentication codes, and credentials out of prompts and redacted logs. Set retention according to the actual pilot agreement.
-- **Portability:** keep prompts, tool schemas, policy rules, traces, and evaluation fixtures in the retailer's control. Provider adapters translate differing tool-call formats. A provider change requires rerunning evaluation.
-- **Operations:** separate model spend limits from total service budgeting, track actual useful answers and failures, and provide a support-lead switch to disable automatic responses.
+An outbox coordinates local state and outbound work; it cannot make an external pickup/refund and local database update one transaction. Use command intent records, provider identifiers, approved permissions and reconciliation. See [synchronization](14-data-and-synchronization.md), [tool contracts](13-business-tools-and-scenarios.md) and [production gates](15-production-plan-and-operations.md).

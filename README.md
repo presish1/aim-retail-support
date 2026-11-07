@@ -7,6 +7,12 @@
 
 This repository contains the **working local prototype**, service design, and architecture for an academic consulting assignment. It connects Qwen3-8B to an API-backed synthetic order database. “Threadline” is a working concept name; the retailer and all example records are fictional.
 
+## Preparing the team presentation
+
+Start with the **[presentation briefing](docs/PRESENTATION_BRIEF.md)** for a slide-ready narrative, architecture diagram, speaker notes, demo script and likely questions. Read the **[complete system guide](SYSTEM_GUIDE.md)** for a self-contained explanation of the MVP. Share that file's GitHub link when asking an assistant or teammate to learn the system; some reading tools will need the individual linked files.
+
+The **[documentation map](docs/README.md)** separates current implementation, verified local evidence, production proposals, assumptions and historical notes. The MVP uses real reads from a mutable synthetic database and a browser WhatsApp simulation. Real WhatsApp, courier, payment and retailer integrations are future work. It demonstrates specific safeguards; it is not universally hallucination-free or certified totally safe.
+
 ## Retail operations workspace
 
 Open **http://127.0.0.1:5173** for the ERP. It includes searchable order and customer records, order creation, fulfilment editing, payment status, return processing, a support queue, conversation history, and an activity log. All counts reflect the database; no invented performance metrics are displayed.
@@ -100,15 +106,18 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 
 | File | What it helps the team decide |
 | --- | --- |
-| [Project definition](docs/01-project-definition.md) | Problem, competing ideas, scope, assumptions, and desired outcomes |
-| [Service & experience design](docs/02-service-design.md) | Customer journey, three views, conversation examples, and exception handling |
-| [Architecture](docs/03-architecture.md) | Components, live-data flow, tool contracts, identity, and failure behavior |
-| [Prototype specification](docs/04-prototype-specification.md) | What to build next, acceptance criteria, and a five-minute demo |
-| [Models & business case](docs/05-models-and-business-case.md) | Shortlist, selection method, cost assumptions, and owner decision |
-| [Evaluation & handoff](docs/06-evaluation-and-handoff.md) | Test design, pilot gates, ownership, and evidence for the slide team |
-| [Implementation & measured checks](docs/07-implementation-status.md) | What works, the actual model, verification evidence, and limits |
-| [WhatsApp customer experience](docs/08-whatsapp-experience.md) | Separate iPhone-style chat, WebSocket architecture, account lookup, and UI references |
-| [ERP workspace](docs/09-erp-workspace.md) | Current operations UI, record workflows, live sync, and v0.5 checks |
+| [Presentation briefing](docs/PRESENTATION_BRIEF.md) | Suggested presentation, speaker notes, demo narration and safe claims |
+| [Complete system guide](SYSTEM_GUIDE.md) | Understand the whole MVP without starting with code |
+| [Architecture](docs/03-architecture.md) | Actual layers, source map, request sequences and proposed deployment |
+| [India and return design](docs/10-grounded-india-returns.md) | Current customer experience, INR/IST, return flow and screenshots |
+| [Grounding and safety](docs/11-grounding-and-safety.md) | Implemented hallucination controls, threat model and remaining gaps |
+| [WhatsApp integration plan](docs/12-whatsapp-integration.md) | Simulation versus real channel, webhooks, templates, media and people |
+| [Business tools and scenarios](docs/13-business-tools-and-scenarios.md) | Actual model tools, internal reads and proposed courier/payment/store adapters |
+| [Data and synchronization](docs/14-data-and-synchronization.md) | Source authority, revisions, transactions, offline behavior and events |
+| [MVP-to-pilot plan](docs/15-production-plan-and-operations.md) | Integration gates, operational owners, evaluation and economics |
+| [API and data reference](docs/16-api-and-data-reference.md) | Implemented endpoints, WebSocket protocol, records and configuration |
+| [Evidence and FAQ](docs/17-evidence-and-faq.md) | What the tests demonstrate, untested areas and presentation answers |
+| [Documentation map and history](docs/README.md) | Reading paths and earlier definition, model, business-case and design notes |
 | [Sources](docs/sources.md) | Primary references checked for the model and deployment discussion |
 | [Demo data](data/README.md) | Eight synthetic customers, fourteen sample orders, an illustrative policy, and a fixed demo clock |
 | [Evaluation scenarios](evaluation/scenarios.csv) | Thirty planned checks; no measured results |
@@ -116,7 +125,7 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 ## Decisions made for this first design
 
 - Focus on order status, return eligibility, and useful escalation.
-- Use a browser-based customer chat to simulate the channel in class; treat WhatsApp as the draft's proposed production channel.
+- Use a browser-based customer chat to simulate the channel in class; treat official WhatsApp integration as a proposed next stage.
 - Demonstrate real reads from a mutable local database behind an API. This proves a live integration pattern, while actual retailer ERP integration remains a production task.
 - The model never writes retailer orders or payments. Operators edit synthetic orders; customers explicitly submit return requests through a fixed workflow. Staff records pickup, inspection, and refund decisions.
 - Evaluate a hosted open-weight model against a deterministic baseline. Buy managed inference for the pilot if a suitable deployment is available; avoid committing to GPU infrastructure before measuring the workload.

@@ -1,5 +1,7 @@
 # 07 · Implementation status — v0.2
 
+**Historical v0.2 snapshot.** Later scope and test counts are documented in [the system guide](../SYSTEM_GUIDE.md) and [current evidence register](17-evidence-and-faq.md). Do not present this page as the current feature inventory.
+
 Built and checked locally on 7 November 2026. The design documents remain the rationale; this page records the implemented scope.
 
 ## Actual model

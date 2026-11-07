@@ -1,5 +1,7 @@
 # 04 · Prototype specification
 
+**Original build plan.** This page records early intended scope, not a current implementation checklist. Use [the system guide](../SYSTEM_GUIDE.md), [current architecture](03-architecture.md) and [evidence register](17-evidence-and-faq.md) for present-tense claims.
+
 ## What this prototype needs to prove
 
 **A small language model can help route real customer language into controlled tools, while current operational records determine the answer.**

@@ -1,5 +1,7 @@
 # 08 · WhatsApp customer experience
 
+**Earlier channel/UI rationale.** Current implemented return behavior is in [document 10](10-grounded-india-returns.md); the explicit MVP-versus-real-WhatsApp plan is [document 12](12-whatsapp-integration.md). The current channel remains a browser simulation.
+
 **v0.4 update:** the demo tab is now phone-only. The operations panel, verification codes, model settings, and traces moved into the [ERP workspace](09-erp-workspace.md). Existing-account matching is the default synthetic demo flow; code verification is optional. Unknown contacts receive an explicit account-not-found message. The following reference/design notes originated in v0.3; current behavior is described below.
 
 The customer experience now lives in a **separate tab at `/whatsapp`**. The existing studio remains the order system, agent inbox, and evaluator view. The phone is a functional React interface, not a picture or a fake conversation generator.

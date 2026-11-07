@@ -1,5 +1,7 @@
 # 09 · Retail operations workspace — v0.4
 
+**Historical v0.4 verification snapshot.** Current v0.5 includes the changes described in [document 10](10-grounded-india-returns.md). Current synchronization limits and evidence are in [document 14](14-data-and-synchronization.md) and [document 17](17-evidence-and-faq.md). USD amounts/test counts below describe the earlier snapshot.
+
 The dashboard is now an operator-facing ERP. Its primary objects are customers, orders, returns, conversations, support requests, and recorded changes. The customer tab at `/whatsapp` contains only the interactive phone.
 
 ## Everyday operations

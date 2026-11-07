@@ -1,0 +1,16 @@
+# Threadline MVP
+
+> MBA AI in Management, Scenario A: supervised order/return support for an Indian D2C apparel store. Current local prototype v0.5 uses a synthetic SQLite source, React/FastAPI, a WhatsApp-style browser simulation and local Qwen3-8B intent routing. Real retailer, WhatsApp, courier and payment integrations are proposed, not connected.
+
+## Start here
+
+- [Complete system guide](https://github.com/presish1/aim-retail-support/blob/main/SYSTEM_GUIDE.md): self-contained explanation, tool boundaries, safety limits and future integration shape.
+- [Presentation briefing](https://github.com/presish1/aim-retail-support/blob/main/docs/PRESENTATION_BRIEF.md): team narrative, suggested slides, speaker notes and demo.
+- [Documentation map](https://github.com/presish1/aim-retail-support/blob/main/docs/README.md): all current references and historical status.
+- [Evidence and FAQ](https://github.com/presish1/aim-retail-support/blob/main/docs/17-evidence-and-faq.md): defined local tests, claims, limitations and learning prompts.
+
+## Reading context
+
+Separate implemented, verified locally, proposed, assumed and historical claims. The code baseline reviewed for these documents is d49563f. Current code and the current reference documents take precedence over earlier prototype/design notes. The original US-store draft assumption is superseded by India/INR/IST.
+
+This index helps locate files; it does not ensure automatic indexing by any reading tool. Fetch the named files or ask for them if unavailable. The MVP is not universally hallucination-free, totally safe, a real WhatsApp integration, a payment executor, or evidence of measured ROI.

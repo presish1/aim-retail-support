@@ -1,5 +1,7 @@
 # 06 · Evaluation, rollout & presentation handoff
 
+**Proposed evaluation targets and handoff rationale.** These are not measured production results or instructor requirements. For the presentation now, start with [the briefing](PRESENTATION_BRIEF.md); current verification and limitations are in [document 17](17-evidence-and-faq.md).
+
 ## Evaluation design
 
 The repository includes **30 planned scenario seeds**, not executed tests or results. Use them to build a small development set, then create a separate held-out set of customer-style paraphrases and multi-turn conversations. Keep the final holdout unseen while adjusting prompts.
