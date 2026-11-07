@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="1120" viewBox="0 0 1520 1120" role="img" aria-labelledby="title desc">
+  <title id="title">Threadline — Scenario A concept board</title>
+  <desc id="desc">Design study for an apparel retailer's order and returns service. A customer conversation reflects a changed live order record. A human handoff preserves context. The workflow verifies identity, understands intent, authorizes tools, reads the live system, applies business rules, and answers or escalates. All records are synthetic and the prototype is not yet built.</desc>
+  <defs>
+    <style>
+      .sans { font-family: 'Avenir Next', 'DejaVu Sans', sans-serif; }
+      .serif { font-family: 'Iowan Old Style', Georgia, 'DejaVu Serif', serif; }
+      .ink { fill: #203b33; }
+      .muted { fill: #58675e; }
+      .small { font-size: 15px; }
+      .body { font-size: 19px; }
+      .label { font-size: 14px; letter-spacing: 2px; }
+      .paneltitle { font-size: 29px; }
+      .bold { font-weight: 600; }
+      .line { stroke: #cbd0c3; stroke-width: 1; }
+    </style>
+  </defs>
+  <rect width="1520" height="1120" fill="#f5f3e9"/>
+  <path d="M56 64H1464" class="line"/>
+  <text x="56" y="43" class="sans label ink bold">AI IN MANAGEMENT / SCENARIO A</text>
+  <text x="1464" y="43" text-anchor="end" class="sans label muted">CONCEPT 01 · 07 NOV 2026</text>
+  <text x="52" y="147" class="serif ink" font-size="81">Threadline</text>
+  <text x="56" y="197" class="sans ink" font-size="27">One reliable answer. One clear next step.</text>
+  <text x="1033" y="123" class="sans body ink bold">400 queries / day</text>
+  <text x="1033" y="154" class="sans body muted">Order status + returns</text>
+  <text x="1033" y="185" class="sans body muted">Current records drive every answer.</text>
+  <path d="M56 231H1464" class="line"/>
+
+  <text x="56" y="268" class="sans label muted">01 / CUSTOMER EXPERIENCE</text>
+  <text x="536" y="268" class="sans label muted">02 / CLASSROOM PROOF</text>
+  <text x="1016" y="268" class="sans label muted">03 / HUMAN EXCEPTIONS</text>
+
+  <rect x="56" y="290" width="448" height="509" rx="9" fill="#fffdf7" stroke="#d2d6c9"/>
+  <rect x="56" y="290" width="448" height="90" rx="9" fill="#203b33"/>
+  <rect x="56" y="360" width="448" height="20" fill="#203b33"/>
+  <text x="82" y="327" class="sans body bold" fill="#fffdf7">Threadline support</text>
+  <text x="82" y="355" class="sans small" fill="#d7e3d8">Automated assistant · verified demo customer</text>
+  <rect x="185" y="402" width="293" height="54" rx="15" fill="#e5e9de"/>
+  <text x="204" y="436" class="sans body ink">Where is order #4812?</text>
+  <text x="82" y="488" class="sans label muted">BEFORE / FRESH ORDER LOOKUP</text>
+  <text x="82" y="526" class="sans body ink">Your order is in transit.</text>
+  <text x="82" y="556" class="sans body ink">The carrier estimates 9 November.</text>
+  <path d="M82 582H478" class="line"/>
+  <text x="82" y="613" class="sans label muted">AFTER / SOURCE RECORD CHANGES</text>
+  <rect x="185" y="633" width="293" height="48" rx="15" fill="#e5e9de"/>
+  <text x="204" y="664" class="sans body ink">Can you check again?</text>
+  <text x="82" y="721" class="sans body ink bold">Your order has been delivered.</text>
+  <text x="82" y="753" class="sans small muted">Each answer reads the API again.</text>
+
+  <rect x="536" y="290" width="448" height="509" rx="9" fill="#e9eddf"/>
+  <text x="562" y="335" class="serif paneltitle ink">The order is the evidence.</text>
+  <text x="562" y="366" class="sans small muted">Separate evaluator console · synthetic API</text>
+  <path d="M562 389H958" class="line"/>
+  <text x="562" y="429" class="sans small muted">ORDER</text>
+  <text x="958" y="429" text-anchor="end" class="sans body ink bold">#4812</text>
+  <text x="562" y="476" class="sans small muted">CURRENT RECORD</text>
+  <text x="958" y="476" text-anchor="end" class="sans body ink bold">Delivered</text>
+  <text x="562" y="523" class="sans small muted">SAVED THROUGH</text>
+  <text x="958" y="523" text-anchor="end" class="sans body ink">Order API / database</text>
+  <path d="M562 550H958" class="line"/>
+  <text x="562" y="590" class="sans body ink bold">Change the source. Ask again.</text>
+  <text x="562" y="627" class="sans body ink">The answer must change with it.</text>
+  <text x="562" y="688" class="sans body ink bold">Then switch the order API off.</text>
+  <text x="562" y="725" class="sans body ink">The service admits it cannot check</text>
+  <text x="562" y="755" class="sans body ink">and offers a useful handoff.</text>
+
+  <rect x="1016" y="290" width="448" height="509" rx="9" fill="#fffdf7" stroke="#d2d6c9"/>
+  <text x="1042" y="335" class="serif paneltitle ink">A person gets the context.</text>
+  <text x="1042" y="366" class="sans small muted">Proposed agent inbox · separate case</text>
+  <path d="M1042 389H1438" class="line"/>
+  <rect x="1042" y="412" width="190" height="32" rx="3" fill="#f3dfcb"/>
+  <text x="1056" y="434" class="sans small bold" fill="#75472b">Policy exception</text>
+  <text x="1042" y="485" class="sans body ink bold">“Can you review my late return?”</text>
+  <text x="1042" y="529" class="sans body ink">Order #4814 · Straight-leg Chino</text>
+  <text x="1042" y="566" class="sans body ink">Standard deadline: 31 October</text>
+  <text x="1042" y="603" class="sans body ink">Customer access: verified</text>
+  <text x="1042" y="640" class="sans body ink">Policy: demo-returns-v1</text>
+  <path d="M1042 666H1438" class="line"/>
+  <text x="1042" y="704" class="sans body ink bold">Review requested, context attached.</text>
+  <text x="1042" y="741" class="sans small muted">The model cannot approve an exception</text>
+  <text x="1042" y="765" class="sans small muted">or issue a refund.</text>
+
+  <text x="56" y="850" class="sans label muted">THE SERVICE UNDERNEATH</text>
+  <path d="M56 879H1464" class="line"/>
+  <text x="56" y="925" class="serif ink" font-size="27">Verify</text>
+  <path d="M233 915h20m-7-6 7 6-7 6" fill="none" stroke="#203b33" stroke-width="1.5"/>
+  <text x="287" y="925" class="serif ink" font-size="27">Understand</text>
+  <path d="M490 915h20m-7-6 7 6-7 6" fill="none" stroke="#203b33" stroke-width="1.5"/>
+  <text x="547" y="925" class="serif ink" font-size="27">Authorize</text>
+  <path d="M732 915h20m-7-6 7 6-7 6" fill="none" stroke="#203b33" stroke-width="1.5"/>
+  <text x="786" y="925" class="serif ink" font-size="27">Read live</text>
+  <path d="M954 915h20m-7-6 7 6-7 6" fill="none" stroke="#203b33" stroke-width="1.5"/>
+  <text x="1008" y="925" class="serif ink" font-size="27">Apply rules</text>
+  <path d="M1210 915h20m-7-6 7 6-7 6" fill="none" stroke="#203b33" stroke-width="1.5"/>
+  <text x="1265" y="925" class="serif ink" font-size="27">Reply / refer</text>
+  <text x="56" y="965" class="sans small muted">Customer identity</text>
+  <text x="287" y="965" class="sans small ink bold">Replaceable LLM</text>
+  <text x="547" y="965" class="sans small muted">Server permissions</text>
+  <text x="786" y="965" class="sans small muted">Operational API</text>
+  <text x="1008" y="965" class="sans small muted">Backend calculations</text>
+  <text x="1265" y="965" class="sans small muted">Validated facts</text>
+  <path d="M56 1003H1464" class="line"/>
+  <text x="56" y="1048" class="sans small ink bold">OWNER DECISION: pilot a bounded service; measure quality, capacity and total cost.</text>
+  <text x="56" y="1080" class="sans label muted">DESIGN STUDY · SYNTHETIC DATA · PROTOTYPE IMPLEMENTATION NEXT</text>
+</svg>

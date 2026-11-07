@@ -1,0 +1,24 @@
+# Synthetic demo fixtures
+
+All records are fictional and contain no customer contact information. JSON is a seed format for the future database, not the proposed runtime answer source.
+
+- `demo-config.json`: fixed demo clock, business timezone, source-health settings.
+- `orders.json`: six orders, including one belonging to a different simulated customer.
+- `return-policy.json`: illustrative rules for initial return eligibility.
+
+At the fixed clock, customer `demo-customer-a` owns orders 4812–4816. Customer `demo-customer-b` owns 4901. Customer A must not discover B's record through a guessed number.
+
+| Order | Purpose | Expected initial behavior |
+| --- | --- | --- |
+| 4812 | In-transit order; mutable status/ETA | Current carrier estimate, then changed answer after console update |
+| 4813 | Delivered eligible shirt | Condition question; initial eligibility; deadline 24 November |
+| 4814 | Delivered outside ordinary window | Deadline 31 October; offer review |
+| 4815 | Final-sale item | Ordinary return ineligible; damaged-item claims require review |
+| 4816 | Mixed delivery states | Select item; evaluate delivered item; no deadline for undelivered item |
+| 4901 | Other customer's purchase | Generic inaccessible-order result for customer A |
+
+Deadline convention: add 30 calendar days to the item's local delivery date; accept requests through 23:59:59 in `America/New_York` on that date. This is an explicit demo convention, not a universal retail rule. Use timezone-aware code, especially across the daylight-saving transition.
+
+The delivery ETA is an estimate. Null means unavailable. A current fetch timestamp and an older carrier-update timestamp have different meanings. Demo source-health controls can mark a known lag independently of a record's last change.
+
+Tracking links are null in the seed data. Suppress the tracking button unless the backend returns a validated URL or a functioning local demo route has been implemented. Conversation examples show the intended richer experience when such links exist. Return-portal links also require an explicitly configured destination before displaying an active action.

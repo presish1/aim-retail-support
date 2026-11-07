@@ -1,0 +1,41 @@
+[
+  {
+    "order_id": "4812", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
+    "status": "in_transit", "carrier": "Demo Carrier", "carrier_eta_date": "2026-11-09",
+    "source_updated_at": "2026-11-07T10:30:00Z", "tracking_url": null,
+    "items": [{"item_id": "4812-1", "name": "Weekday Hoodie", "quantity": 1, "status": "in_transit", "delivered_at": null, "final_sale": false, "returned": false}]
+  },
+  {
+    "order_id": "4813", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
+    "status": "delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
+    "source_updated_at": "2026-10-25T15:00:00Z", "tracking_url": null,
+    "items": [{"item_id": "4813-1", "name": "Everyday Oxford", "quantity": 1, "status": "delivered", "delivered_at": "2026-10-25T15:00:00Z", "final_sale": false, "returned": false}]
+  },
+  {
+    "order_id": "4814", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
+    "status": "delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
+    "source_updated_at": "2026-10-01T15:00:00Z", "tracking_url": null,
+    "items": [{"item_id": "4814-1", "name": "Straight-leg Chino", "quantity": 1, "status": "delivered", "delivered_at": "2026-10-01T15:00:00Z", "final_sale": false, "returned": false}]
+  },
+  {
+    "order_id": "4815", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
+    "status": "delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
+    "source_updated_at": "2026-11-02T16:00:00Z", "tracking_url": null,
+    "items": [{"item_id": "4815-1", "name": "Archive Tee", "quantity": 1, "status": "delivered", "delivered_at": "2026-11-02T16:00:00Z", "final_sale": true, "returned": false}]
+  },
+  {
+    "order_id": "4816", "customer_id": "demo-customer-a", "policy_version": "demo-returns-v1",
+    "status": "partially_delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
+    "source_updated_at": "2026-11-04T16:00:00Z", "tracking_url": null,
+    "items": [
+      {"item_id": "4816-1", "name": "Ribbed Cardigan", "quantity": 1, "status": "delivered", "delivered_at": "2026-11-03T16:00:00Z", "final_sale": false, "returned": false},
+      {"item_id": "4816-2", "name": "Canvas Overshirt", "quantity": 1, "status": "processing", "delivered_at": null, "final_sale": false, "returned": false}
+    ]
+  },
+  {
+    "order_id": "4901", "customer_id": "demo-customer-b", "policy_version": "demo-returns-v1",
+    "status": "delivered", "carrier": "Demo Carrier", "carrier_eta_date": null,
+    "source_updated_at": "2026-11-05T16:00:00Z", "tracking_url": null,
+    "items": [{"item_id": "4901-1", "name": "Utility Jacket", "quantity": 1, "status": "delivered", "delivered_at": "2026-11-05T16:00:00Z", "final_sale": false, "returned": false}]
+  }
+]

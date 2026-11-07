@@ -1,0 +1,16 @@
+{
+  "synthetic": true,
+  "version": "demo-returns-v1",
+  "effective_from": "2026-01-01",
+  "description": "Illustrative initial return eligibility; retailer inspection and exception review remain separate.",
+  "timezone": "America/New_York",
+  "window_calendar_days_after_item_delivery": 30,
+  "deadline_inclusive_end_of_local_day": true,
+  "required_condition": ["unworn", "tags_attached"],
+  "customer_stated_condition_is_provisional": true,
+  "final_sale_ordinary_return_allowed": false,
+  "damaged_or_faulty_item_action": "human_review",
+  "missing_or_unknown_policy_action": "human_review",
+  "refund_approval_enabled": false,
+  "create_return_enabled": false
+}

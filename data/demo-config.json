@@ -1,0 +1,17 @@
+{
+  "synthetic": true,
+  "demo_now": "2026-11-07T12:00:00Z",
+  "business_timezone": "America/New_York",
+  "staff_schedule": {
+    "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+    "opens_at": "09:00",
+    "closes_at": "18:00",
+    "holidays": [],
+    "fixture_only": true
+  },
+  "active_customer_id": "demo-customer-a",
+  "order_api_available": true,
+  "feed_health": "healthy",
+  "model_mode": "not_connected",
+  "policy_fixture_only": true
+}
