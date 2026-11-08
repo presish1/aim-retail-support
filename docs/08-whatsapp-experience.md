@@ -1,6 +1,6 @@
 # 08 · WhatsApp customer experience
 
-**Earlier channel/UI rationale.** Current implemented return behavior is in [document 10](10-grounded-india-returns.md); the explicit MVP-versus-real-WhatsApp plan is [document 12](12-whatsapp-integration.md). The current channel remains a browser simulation.
+**Historical v0.3/v0.4 channel/UI snapshot.** Model details below describe that version; current Gemini and hybrid RAG are in [document 19](19-gemini-hybrid-live-data.md). Current implemented return behavior is in [document 10](10-grounded-india-returns.md); the explicit MVP-versus-real-WhatsApp plan is [document 12](12-whatsapp-integration.md). The current channel remains a browser simulation.
 
 **v0.4 update:** the demo tab is now phone-only. The operations panel, verification codes, model settings, and traces moved into the [ERP workspace](09-erp-workspace.md). Existing-account matching is the default synthetic demo flow; code verification is optional. Unknown contacts receive an explicit account-not-found message. The following reference/design notes originated in v0.3; current behavior is described below.
 
@@ -82,4 +82,4 @@ Browser checks used genuine Qwen inference for the complete contact → verifica
 
 This remains a local synthetic prototype. A real WhatsApp Business integration would use Meta's messaging APIs and incoming webhooks in a channel adapter, with the same support workflow underneath. It would not replace the native WhatsApp client with this browser mockup. See the [official developer hub](https://whatsappbusiness.com/developers/developer-hub/) and [Meta-hosted receiving-messages documentation](https://whatsapp.github.io/WhatsApp-Nodejs-SDK/receivingMessages/) for that integration pattern; no Meta account, production credential, email/SMS service, or retailer ERP is connected here.
 
-The current India store adds product photo messages, real local photo uploads and guided return submission. See [v0.5 return design](10-grounded-india-returns.md) for the current workflow.
+The later India-store extension added product photos, local uploads and guided returns. See the [retained return design](10-grounded-india-returns.md) and [current v0.7 architecture](19-gemini-hybrid-live-data.md).

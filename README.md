@@ -25,9 +25,9 @@ Open **http://127.0.0.1:5173/whatsapp**, or use **Open customer chat** in the ER
 
 Ask “Where is my order?”, then supply **aarav@example.com**, **+91 90000 00101**, or **CUS-1001**. The default demo setting matches an existing account directly. An unknown contact gets an explicit account-not-found reply and is not asked for a code. **ananya@example.com** is a second fictional customer. Add a new customer and order in the ERP to test a new account end to end.
 
-Saving a selected order's status, carrier estimate, or tracking details sends a source-backed update to its connected customer chat. A subsequent AI request reads the database again. The ERP also refreshes through its own WebSocket when messages or records change. [Read the ERP design and verification notes](docs/09-erp-workspace.md).
+Saving a selected order's status, carrier estimate, or tracking details sends a source-backed update to its connected customer chat. A subsequent AI request reads the database again. The ERP also refreshes through its own WebSocket when messages or records change. [Read current synchronization and limits](docs/14-data-and-synchronization.md).
 
-![Phone-only customer conversation](design/whatsapp-phone-only.png)
+![Gemini customer conversation with current tracking data](design/whatsapp-gemini-support.png)
 
 ## India store and guided returns
 
@@ -75,7 +75,7 @@ npm run build
 
 The default **Contact match · demo** setting intentionally simplifies identification for a synthetic classroom demo. Optional code verification is available under Settings; its code is visible in ERP Conversations. Neither mode is production authentication. The server binds to loopback. Return and refund records update the synthetic database only; no real payment service, retailer ERP, or WhatsApp account is connected.
 
-The original [concept board](design/concept-board.svg) and [v0.2 screenshot](design/prototype-desktop.png) remain as design history.
+Earlier designs and model experiments are listed separately in the [documentation history](docs/README.md#earlier-rationale-and-snapshots).
 
 ## The assignment we are solving
 
@@ -135,13 +135,13 @@ The phone model produces a typed intent, requested details, guidance IDs and con
 | [Demo data](data/README.md) | Eight synthetic customers, fourteen sample orders, an illustrative policy, and a fixed demo clock |
 | [Evaluation scenarios](evaluation/scenarios.csv) | Thirty planned checks; no measured results |
 
-## Decisions made for this first design
+## Current implementation decisions
 
 - Focus on order status, return eligibility, and useful escalation.
 - Use a browser-based customer chat to simulate the channel in class; treat official WhatsApp integration as a proposed next stage.
 - Demonstrate real reads from a mutable local database behind an API. This proves a live integration pattern, while actual retailer ERP integration remains a production task.
 - The model never writes retailer orders or payments. Operators edit synthetic orders; customers explicitly submit return requests through a fixed workflow. Staff records pickup, inspection, and refund decisions.
-- Evaluate a hosted open-weight model against a deterministic baseline. Buy managed inference for the pilot if a suitable deployment is available; avoid committing to GPU infrastructure before measuring the workload.
+- Use Gemini generation and embeddings with hybrid retrieval. Compare quality and operating cost against the deterministic baseline before a retailer pilot.
 - Treat staffing, channel, policy, prices, and benefits as assumptions until verified.
 
 ## Repository status
@@ -150,4 +150,4 @@ The phone model produces a typed intent, requested details, guidance IDs and con
 
 **Verification:** the [evidence register](docs/17-evidence-and-faq.md) records backend tests, real Gemini conversations, mutable-database checks, lexical/hybrid comparison and browser checks. These are authored development regressions, not unseen accuracy or a production reliability estimate. Earlier Qwen results remain historical.
 
-**Next:** a separate held-out paraphrase/multi-turn evaluation, measured model comparison and cost analysis, then presentation evidence. An actual retailer pilot also needs its real systems, verification, and deployment review.
+**Next:** unseen conversation evaluation, measured provider/cost comparisons and real retailer integrations with production identity and deployment review. Current architecture, screenshots and recorded checks are ready for the team presentation.

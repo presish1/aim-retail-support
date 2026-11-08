@@ -1,6 +1,6 @@
 # 02 · Service & experience design
 
-**Early design rationale, not a current feature inventory.** The return journey is in [document 10](10-grounded-india-returns.md), current v0.6 conversation/RAG is in [document 18](18-conversational-rag.md), and presentation content is in [the team briefing](PRESENTATION_BRIEF.md). See [the documentation map](README.md) for status definitions.
+**Early design rationale, not a current feature inventory.** The return journey is in [document 10](10-grounded-india-returns.md), current v0.7 Gemini/RAG/live data is in [document 19](19-gemini-hybrid-live-data.md), and presentation content is in [the team briefing](PRESENTATION_BRIEF.md). See [the documentation map](README.md) for status definitions.
 
 ## Experience principle
 

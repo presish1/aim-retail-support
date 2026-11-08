@@ -15,7 +15,7 @@
 | Current authored conversations | [runner](../evaluation/run_conversations.py), [cases](../evaluation/conversation_cases.json), [v0.7 Gemini result](../evaluation/results/v07-gemini-conversations.json) | 18 scenarios per mode, including exact estimate/tracking updates in temporary databases |
 | Retrieval comparison | [runner](../evaluation/run_retrieval.py), [queries](../evaluation/retrieval_cases.json), [v0.7 result](../evaluation/results/v07-retrieval.json) | 12 authored queries, acceptable-reference hit at rank 4; development evidence |
 | Historical v0.6 conversations | [Qwen result](../evaluation/results/v06-conversations.json) | 16 prior authored scenarios; current model is Gemini |
-| Live browser demonstrations | [screens and flow](10-grounded-india-returns.md), [ERP screen](../design/erp-dashboard.png), [phone screen](../design/whatsapp-phone-only.png) | Recorded local UI behavior and source-backed Qwen demo; screenshots alone are not automated assertions |
+| Historical UI demonstrations | [screens and flow](10-grounded-india-returns.md), [ERP screen](../design/erp-dashboard.png), [phone screen](../design/whatsapp-phone-only.png) | Recorded local UI behavior and source-backed Qwen demo; screenshots alone are not automated assertions |
 | Historical real model/rules smoke | [v0.2 result](../evaluation/results/local-qwen3-smoke.json), [runner](../evaluation/run_smoke.py) | Twelve authored scenarios per mode on a prior version; integration evidence only |
 | Planned evaluation cases | [scenario seeds](../evaluation/scenarios.csv), [evaluation plan](06-evaluation-and-handoff.md) | A starting test design, not executed benchmark results |
 
@@ -33,7 +33,7 @@ Browser checks verified Gemini policy help without identification, account/order
 
 **Historical documentation verification, 7 November 2026:** the then-current 95-case suite passed, the API table matched 24 `/api` routes, the legacy catalogue matched four model schemas/six read functions, and 168 links resolved in 23 Markdown files. Those counts describe the v0.5 documentation pass.
 
-**Historical v0.6 verification:** 150 backend cases and the build passed. The recorded Qwen run retains per-turn mode, provenance, generated wording/fallback, tokens and timing. Action confirmations intentionally use guarded renderers. Details in the next three paragraphs describe that earlier run.
+**Historical v0.6 verification:** 150 backend cases and the build passed. The recorded Qwen run retains per-turn mode, provenance, generated wording/fallback, tokens and timing. Action confirmations intentionally use guarded renderers. The following Qwen results describe that earlier run.
 
 The historical Qwen run passed **16/16 scenarios per mode**, with 49 turns per mode, 35 genuine inference calls, 14 system turns and no outage fallback. Eight replies used generated wording; one wording was rejected. Median latency was 4,189 ms and nearest-rank p95 5,526 ms on the running local model. This does not establish unseen accuracy, capacity or a production SLA.
 

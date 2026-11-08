@@ -2,13 +2,13 @@
 
 **Historical exploration; outside current v0.7 scope.** No training job, adapter or runtime example-training pipeline is implemented. The active project focuses on [Gemini, hybrid RAG and current database reads](../docs/19-gemini-hybrid-live-data.md). Material below describes the earlier v0.6 proposal, not a feature to claim in the presentation.
 
-The running v0.6 uses **RAG, prompt examples, a structured response schema, and low-variance decoding**. Qwen3-8B's weights have **not** been fine-tuned. A custom prompt or a different temperature is not weight fine-tuning.
+The earlier v0.6 used **RAG, prompt examples, a structured response schema, and low-variance decoding**. Qwen3-8B's weights have **not** been fine-tuned. A custom prompt or a different temperature is not weight fine-tuning.
 
 `support-examples.jsonl` contains 16 authored synthetic input/target pairs for prompt review and possible future supervised training. They cover intent/focus, relevant guide IDs and conversational opening/closing fields. The server inserts factual paragraphs separately. These pairs are not real customer data, a complete reviewed production dataset, or proof that an adapter improves quality. The inference prompt uses representative intent examples; it does not load this entire file on every request. A training pipeline would also need to construct the matching retrieved context for each pair.
 
 The response guides in `data/support-guides.json` supply retrieval context. BM25 retrieves locally from this approved, versioned corpus. No orders, customer uploads or transcripts are placed in the guide index. Operational values still come from current authorized reads.
 
-Current support generation defaults: temperature `0.2`, top-p `0.8`, repetition penalty `1.05`, non-thinking mode, output cap 380 tokens, context 6144 tokens, HTTP timeout 30 seconds. Exact UI actions/social turns avoid model calls. A free-text turn has at most one model call for planning and wording together. Temperature changes sampling variability; understanding comes from the model, useful context, task instructions, examples and retrieval—not temperature alone.
+Historical v0.6 support generation settings (not Gemini defaults): temperature `0.2`, top-p `0.8`, repetition penalty `1.05`, non-thinking mode, output cap 380 tokens, context 6144 tokens, HTTP timeout 30 seconds. Exact UI actions/social turns avoid model calls. A free-text turn has at most one model call for planning and wording together. Temperature changes sampling variability; understanding comes from the model, useful context, task instructions, examples and retrieval—not temperature alone.
 
 Before a genuine LoRA/SFT experiment:
 

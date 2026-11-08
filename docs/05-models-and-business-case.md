@@ -1,10 +1,10 @@
 # 05 · Model selection & business case
 
-**Provisional research and arithmetic, not measured model superiority, current quotes or realized savings.** The MVP currently uses local Qwen3-8B. The original US-region preference discussed below came from the early draft and is superseded by the user's India-store decision; production processing requirements still need confirmation. Use [the current plan](15-production-plan-and-operations.md) and [evidence](17-evidence-and-faq.md) in the presentation.
+**Historical model research and illustrative arithmetic.** The Qwen/open-weight recommendation below belongs to an earlier design. Current v0.7 uses [Gemini and hybrid RAG](19-gemini-hybrid-live-data.md). No model superiority, current price quote or realized savings is established here. The original US-region preference discussed below came from the early draft and is superseded by the user's India-store decision; production processing requirements still need confirmation. Use [the current plan](15-production-plan-and-operations.md) and [evidence](17-evidence-and-faq.md) in the presentation.
 
 **v0.2 implementation decision:** use `qwen3:8b` through local Ollama for the synthetic classroom prototype, with non-thinking tool selection and server-rendered transactional facts. The 12-case integration smoke run passes, as does the rules baseline. The broader comparative evaluation and production deployment decision remain open; see [implementation status](07-implementation-status.md).
 
-## Recommendation before benchmarking
+## Historical recommendation — superseded
 
 Start with managed inference for an open-weight model, conditional on a suitable region, exact-model availability, acceptable retention, latency, and spending controls. Keep a deterministic baseline. Do not buy GPU infrastructure based only on 400 daily queries: that average says little about peak concurrency, token use, utilization, or support burden.
 

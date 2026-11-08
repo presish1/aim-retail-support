@@ -1,6 +1,6 @@
 # Sources & evidence register
 
-Checked **7 November 2026**. Availability, pricing, endpoint behavior, and provider policies must be checked again before implementation. These references support feasibility discussion; they do not substitute for testing the selected deployment.
+Checked **7–8 November 2026**. Business-provider references were checked 7 November and Gemini references 8 November. Availability, pricing, endpoint behavior, and provider policies must be checked again before implementation. These references support feasibility discussion; they do not substitute for testing the selected deployment.
 
 ## Current MVP evidence and integration references
 

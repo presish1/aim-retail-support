@@ -10,7 +10,7 @@
 
 | Label | Meaning |
 | --- | --- |
-| **Implemented** | Exists in the local MVP; this does not establish a connection to a real retailer/provider. |
+| **Implemented** | Exists in the MVP. Gemini is connected; retailer, courier, payment and WhatsApp business integrations remain proposed. |
 | **Verified locally** | A defined test or demonstration passed on synthetic records. |
 | **Proposed** | A future integration/control; not implemented in this repository. |
 | **Assumption** | Requires the retailer's confirmation. |

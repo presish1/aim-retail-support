@@ -20,7 +20,7 @@ The management decision is **where automation can safely remove waiting and repe
 | First response usually 14–20 hours; peaks 48 hours | Draft estimate, unmeasured | Validate with ticket timestamps before claiming improvement |
 | 25% follow-ups; 35% outside business hours | Draft estimates | Measure cases and messages separately; percentages can overlap |
 | 45 normal / 55 peak agent-hours daily | Draft estimate | Validate handle times; scheduled hours differ from productive capacity |
-| Cost sensitivity and open-weight preference | Draft owner preferences | Evaluate deployment cost and portability alongside quality |
+| Cost sensitivity and earlier open-weight preference | Early draft; provider choice superseded by Gemini | Evaluate cost/portability; use document 19 for the current provider |
 | Return window, ERP vendor, available API, identity flow | Unknown | Use labeled demo assumptions; verify before production |
 
 The supplied report is a preliminary team draft. Its figures are inputs to investigate, not additional instructor requirements. Personal names, student IDs, and the original attachment are not needed in the public design package.
@@ -79,4 +79,4 @@ A useful-answer timer stops when the customer receives the requested fact or an 
 
 ## Questions to settle during implementation discovery
 
-Which system is the order source of truth? Can it provide fresh data, ownership binding, item details, delivery timestamps, and authenticated return links? Which return policy applies to each purchase? What are the actual channel and business timezone? Is hosted open-weight inference acceptable? What monthly spending ceiling and escalation response commitment can the owner support? Does the full assignment rubric add requirements beyond the supplied scenario image?
+Which system is the order source of truth? Can it provide fresh data, ownership binding, item details, delivery timestamps, and authenticated return links? Which return policy applies to each purchase? What are the actual channel and business timezone? Which hosted inference terms and processing location are acceptable? What monthly spending ceiling and escalation response commitment can the owner support? Does the full assignment rubric add requirements beyond the supplied scenario image?

@@ -1,6 +1,6 @@
 # v0.5 — India store, verified reads, and return service design
 
-**Retained return/read design.** Version 0.6 adds contextual conversation, natural reported answers and approved-guide RAG. Its model/response architecture is described in [document 18](18-conversational-rag.md), which supersedes the older response-generation diagram below. Existing read, consent, photo and staff gates remain.
+**Retained return/read design originating in v0.5.** Current v0.7 Gemini/hybrid RAG is described in [document 19](19-gemini-hybrid-live-data.md), which supersedes the historical model/response diagram below. Existing read, consent, photo and staff gates remain.
 
 The instructor's constraint remains the same: order status and return answers must come from the current order system. India, INR, the iPhone-style WhatsApp channel, and guided return intake are the user's subsequent product decisions. The earlier draft's US setting is superseded. The 30-day policy, pickup windows, catalogue prices, and customer records are illustrative assumptions for this prototype.
 
@@ -15,7 +15,7 @@ Customers need three things: an understandable current status, a clear next step
 
 ## Preventing invented transactional answers
 
-The model is Qwen3-8B through local Ollama. Its role is bounded intent/tool selection. It cannot write the final order, refund, eligibility, or return-intake facts. State-machine questions and all factual responses are rendered by backend code.
+At v0.5, Qwen3-8B ran through Ollama for bounded intent/tool selection. This paragraph and diagram record that historical implementation; current model behavior is in document 19. It cannot write the final order, refund, eligibility, or return-intake facts. State-machine questions and all factual responses are rendered by backend code.
 
 ```mermaid
 flowchart TD
