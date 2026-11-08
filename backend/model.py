@@ -83,14 +83,23 @@ class ModelUnavailable(Exception):
 
 class ModelAdapter:
     def __init__(self):
-        self.model = os.getenv("THREADLINE_MODEL", "qwen3:8b")
-        self.provider = os.getenv("THREADLINE_MODEL_PROVIDER", "ollama")
-        self.url = os.getenv("THREADLINE_MODEL_URL", "http://127.0.0.1:11434").rstrip(
-            "/"
+        self.provider = os.getenv("THREADLINE_MODEL_PROVIDER", "gemini")
+        self.model = os.getenv(
+            "THREADLINE_MODEL",
+            "gemini-3.8-flash" if self.provider == "gemini" else "qwen3:8b",
         )
+        self.url = os.getenv(
+            "THREADLINE_MODEL_URL",
+            "https://generativelanguage.googleapis.com/v1beta"
+            if self.provider == "gemini"
+            else "http://127.0.0.1:11434",
+        ).rstrip("/")
         self.key = os.getenv("THREADLINE_MODEL_API_KEY", "")
         self.region = os.getenv(
-            "THREADLINE_MODEL_REGION", "Local device — synthetic data"
+            "THREADLINE_MODEL_REGION",
+            "Google Gemini API — cloud processing"
+            if self.provider == "gemini"
+            else "Local device — synthetic data",
         )
         self.support_temperature = min(
             0.7, max(0.0, float(os.getenv("THREADLINE_SUPPORT_TEMPERATURE", "0.2")))
@@ -102,7 +111,16 @@ class ModelAdapter:
     async def health(self):
         try:
             async with httpx.AsyncClient(timeout=3, trust_env=False) as client:
-                if self.provider == "ollama":
+                if self.provider == "gemini":
+                    response = await client.get(
+                        self.url + "/models/" + self.model,
+                        headers={"x-goog-api-key": self.key},
+                    )
+                    response.raise_for_status()
+                    ready = bool(self.key) and "generateContent" in response.json().get(
+                        "supportedGenerationMethods", []
+                    )
+                elif self.provider == "ollama":
                     response = await client.get(self.url + "/api/tags")
                     response.raise_for_status()
                     ready = any(
@@ -135,6 +153,21 @@ class ModelAdapter:
     def headers(self):
         return {"Authorization": "Bearer " + self.key} if self.key else {}
 
+    def decoding(self):
+        if self.provider == "gemini":
+            return {
+                "sampling": "provider_defaults",
+                "thinking": "low",
+                "max_output_tokens": 2048,
+                "timeout_seconds": 30,
+            }
+        return {
+            "temperature": self.support_temperature,
+            "top_p": self.support_top_p,
+            "thinking": False,
+            "max_output_tokens": 380,
+        }
+
     async def plan_support(self, message, context, retrieved):
         from .support_plan import infer_plan
 
@@ -156,6 +189,60 @@ class ModelAdapter:
         )
         messages.append({"role": "user", "content": message})
         try:
+            if self.provider == "gemini":
+                from .gemini import generate_json
+
+                schema = {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "enum": [t["function"]["name"] for t in TOOLS]
+                            + ["clarify"],
+                        },
+                        "arguments": {
+                            "type": "object",
+                            "properties": {
+                                "order_id": {"type": "string"},
+                                "item_id": {"type": "string"},
+                            },
+                            "additionalProperties": False,
+                        },
+                    },
+                    "required": ["name", "arguments"],
+                    "additionalProperties": False,
+                }
+                content, usage = await generate_json(self, messages, schema)
+                value = json.loads(content)
+                permitted = {t["function"]["name"] for t in TOOLS} | {"clarify"}
+                if (
+                    not isinstance(value, dict)
+                    or value.get("name") not in permitted
+                    or not isinstance(value.get("arguments"), dict)
+                ):
+                    raise ModelUnavailable(
+                        "Invalid Gemini tool proposal; supported fallback used."
+                    )
+                if set(value["arguments"]) - {"order_id", "item_id"} or any(
+                    not isinstance(v, str) or len(v) > 80
+                    for v in value["arguments"].values()
+                ):
+                    raise ModelUnavailable(
+                        "Invalid Gemini tool arguments; supported fallback used."
+                    )
+                if value["name"] == "clarify":
+                    return {"name": "clarify", "arguments": {}, "usage": usage}
+                contract = next(
+                    t["function"]["parameters"]
+                    for t in TOOLS
+                    if t["function"]["name"] == value["name"]
+                )
+                args = {
+                    k: value["arguments"].get(k, "")
+                    for k in contract["properties"]
+                    if k in contract.get("required", []) or value["arguments"].get(k)
+                }
+                return {"name": value["name"], "arguments": args, "usage": usage}
             async with httpx.AsyncClient(timeout=45, trust_env=False) as client:
                 if self.provider == "ollama":
                     response = await client.post(

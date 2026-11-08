@@ -98,6 +98,13 @@ async def run(args):
                     if index == len(case["turns"]) - 1:
                         for key, value in case.get("controls_before_last", {}).items():
                             store.set_setting(key, value)
+                        for reference, updates in case.get(
+                            "order_updates_before_last", {}
+                        ).items():
+                            store.revise_order(
+                                reference,
+                                lambda current, changes=updates: {**current, **changes},
+                            )
                     started = time.perf_counter()
                     await channel.handle(record["id"], uuid.uuid4().hex, text, mode)
                     record = store.channel(record["id"])
@@ -111,6 +118,9 @@ async def run(args):
                             "plan": trace.get("plan"),
                             "composition": trace.get("composition"),
                             "retrieval": trace.get("retrieval"),
+                            "reads": trace.get("reads"),
+                            "evidence": trace.get("evidence"),
+                            "decoding": trace.get("decoding"),
                             "usage": trace.get("usage"),
                             "latency_ms": round((time.perf_counter() - started) * 1000),
                         }

@@ -1,6 +1,6 @@
 # 17 — Evidence, presentation claims and FAQ
 
-**Purpose:** let the team defend the MVP without overstating it. Current local MVP **v0.6**, reviewed 8 November 2026; backend suite: **150 cases**. Contextual support/RAG is implemented; real retailer/provider integrations remain future work.
+**Purpose:** defend the MVP without overstating it. Current **v0.7**, reviewed 8 November 2026; backend suite: **165 cases**. Gemini generation/embeddings, hybrid RAG and mutable local database reads are implemented. Real retailer, WhatsApp, courier and payment integrations remain future work.
 
 ## What is verified and where?
 
@@ -11,18 +11,31 @@
 | ERP CRUD, revision conflicts, notifications, returns and assignment | [test_erp.py](../backend/tests/test_erp.py) | Defined local operations boundaries and synchronization |
 | Bad source data, unsupported model reference, evidence/photo validation, explicit submission and transaction rollback | [test_grounding.py](../backend/tests/test_grounding.py) | Defined adversarial/workflow/transaction cases |
 | Focused follow-ups, compound questions, return interruptions/corrections, negation, RAG refresh/provenance, checked model wording and fallback | [test_support.py](../backend/tests/test_support.py) | Defined conversation and composition boundaries; many cases deliberately use model doubles |
-| Current authored conversations | [runner](../evaluation/run_conversations.py), [cases](../evaluation/conversation_cases.json), [recorded v0.6 run](../evaluation/results/v06-conversations.json) | 16 authored scenarios in baseline and real Qwen modes; development regression, not unseen accuracy |
+| Current provider and retrieval contracts | [test_gemini_rag.py](../backend/tests/test_gemini_rag.py) | Native payload/usage, secret-safe errors, incomplete output, vector integrity, cache invalidation and fallback; no paid unit-test calls |
+| Current authored conversations | [runner](../evaluation/run_conversations.py), [cases](../evaluation/conversation_cases.json), [v0.7 Gemini result](../evaluation/results/v07-gemini-conversations.json) | 18 scenarios per mode, including exact estimate/tracking updates in temporary databases |
+| Retrieval comparison | [runner](../evaluation/run_retrieval.py), [queries](../evaluation/retrieval_cases.json), [v0.7 result](../evaluation/results/v07-retrieval.json) | 12 authored queries, acceptable-reference hit at rank 4; development evidence |
+| Historical v0.6 conversations | [Qwen result](../evaluation/results/v06-conversations.json) | 16 prior authored scenarios; current model is Gemini |
 | Live browser demonstrations | [screens and flow](10-grounded-india-returns.md), [ERP screen](../design/erp-dashboard.png), [phone screen](../design/whatsapp-phone-only.png) | Recorded local UI behavior and source-backed Qwen demo; screenshots alone are not automated assertions |
 | Historical real model/rules smoke | [v0.2 result](../evaluation/results/local-qwen3-smoke.json), [runner](../evaluation/run_smoke.py) | Twelve authored scenarios per mode on a prior version; integration evidence only |
 | Planned evaluation cases | [scenario seeds](../evaluation/scenarios.csv), [evaluation plan](06-evaluation-and-handoff.md) | A starting test design, not executed benchmark results |
 
 Run `npm test` to reproduce the backend suite and `npm run build` to check the frontend build. Model smoke requires the configured real model. Tests use temporary databases; do not reset the shared demonstration workspace to run them. See [README](../README.md) for setup.
 
+## Current v0.7 results
+
+**165 backend cases and the production build pass.** The [recorded conversation run](../evaluation/results/v07-gemini-conversations.json) passed 18/18 authored scenarios in each mode, 57 turns per mode. The Gemini run used 41 real generation calls with hybrid retrieval, 16 zero-generation system turns, no generation-outage fallback and no semantic-retrieval fallback. Ten replies used accepted generated language; three generated wordings were rejected and source-rendered. Other turns intentionally used guarded intake, selection, handoff or failure renderers. Median model-turn time was 3,283 ms; nearest-rank p95 4,464 ms, including query retrieval/reads with the document cache already built. This is one local development run, not a comparative speed claim or production SLA.
+
+The mutable-data scenarios updated the estimate to 12 November and the tracking reference to `CURRENT-AWB-555` between questions. Both final Gemini replies used **order revision 2**, with fresh reads recorded in the JSON. Source-outage and cross-account scenarios passed too. The [legacy HTTP smoke](../evaluation/results/v07-gemini-legacy-smoke.json) passed 12/12 authored cases per mode.
+
+The [separate retrieval run](../evaluation/results/v07-retrieval.json) retrieved an acceptable reference in the top four for **11/12 lexical queries and 12/12 hybrid queries**, with no semantic fallback. These are authored checks used during development, not held-out retrieval quality or customer-resolution metrics.
+
+Browser checks verified Gemini policy help without identification, account/order selection, focused tracking and the ERP panel showing model, hybrid retrieval, guide source, current order revision/fetch time and named reads. Screenshots: [Gemini chat](../design/whatsapp-gemini-support.png), [RAG/live-read evidence](../design/erp-gemini-rag-evidence.png). The user-authorized Qwen/Gemma local model files were removed; Ollama listed no remaining models.
+
 **Historical documentation verification, 7 November 2026:** the then-current 95-case suite passed, the API table matched 24 `/api` routes, the legacy catalogue matched four model schemas/six read functions, and 168 links resolved in 23 Markdown files. Those counts describe the v0.5 documentation pass.
 
-**v0.6 verification, 8 November 2026:** 150 backend cases and the TypeScript/Vite production build pass. The recorded conversation run retains actual per-turn mode, source/guidance provenance, generated opening/closing, accepted wording or fallback reason, tokens and local timing. Model mode is not synonymous with model-written final text: action confirmations intentionally use guarded renderers, and failed wording checks also use source text. Count these separately when analyzing the JSON.
+**Historical v0.6 verification:** 150 backend cases and the build passed. The recorded Qwen run retains per-turn mode, provenance, generated wording/fallback, tokens and timing. Action confirmations intentionally use guarded renderers. Details in the next three paragraphs describe that earlier run.
 
-The final recorded run passed **16/16 authored scenarios in each mode**, with 49 customer turns per mode. The model run made 35 genuine inference calls and avoided inference on 14 system turns; no model-outage fallback occurred. Eight eligible replies used accepted generated wording; one generated factual wording was rejected and source-rendered. Other inference turns led to guarded intake, selection, handoff or failure responses. Median actual-model turn latency was 4,189 ms and nearest-rank p95 was 5,526 ms on the already-running local model. This single authored development run does not establish unseen accuracy, cold-start performance, capacity or a production SLA.
+The historical Qwen run passed **16/16 scenarios per mode**, with 49 turns per mode, 35 genuine inference calls, 14 system turns and no outage fallback. Eight replies used generated wording; one wording was rejected. Median latency was 4,189 ms and nearest-rank p95 5,526 ms on the running local model. This does not establish unseen accuracy, capacity or a production SLA.
 
 Browser checks used actual local Qwen: a tracking-only follow-up, delivery estimate, existing-refund response, account switch, return reason “the sleeves are too tight,” combined condition/tag answer, and a tag FAQ that preserved the pending photo step. ERP Conversations displayed named reads and the new readable evidence panel. These use the existing mutable synthetic workspace, not a pristine benchmark. The broader prior UI checks remain historical evidence.
 
@@ -30,7 +43,7 @@ Screens: [contextual return in the phone](../design/whatsapp-contextual-return.p
 
 ## What these tests do not prove
 
-Many tests use deterministic baseline routing, forced model failure or fake model output to isolate controls. They do not establish Qwen's accuracy on unseen language. The count is parameterized cases, not independent real customers, an uptime guarantee, security certification or statistical evidence of zero error. The authored real-Qwen conversations were used during development; passing them is regression evidence, not a fair estimate of generalization or proof of a “100x” improvement.
+Many tests use baseline routing, forced failure or model doubles to isolate controls. They do not establish a model's unseen accuracy. These are parameterized cases, not independent real customers, an uptime guarantee, security certification or evidence of zero error. Authored model/retrieval cases were used in development; passing them is regression evidence, not a fair estimate of generalization or a “100x” improvement.
 
 Still unverified: a real retailer/Meta/courier/gateway/helpdesk connection; complete security/privacy assessment; peak-load and multi-worker recovery; production credential/permissions; durable offline notifications; fraud/vision assessment; full finance/tax/discount/COD logic; broad multilingual conversations; held-out language comparison; customer satisfaction, sustained resolution, staff capacity and ROI.
 
@@ -40,10 +53,10 @@ Still unverified: a real retailer/Meta/courier/gateway/helpdesk connection; comp
 | --- | --- |
 | Answers use live data | Demonstrated with current mutable synthetic SQLite records behind an API |
 | Factual invention is constrained | Current validated paragraphs, targeted prose checks and fallback constrain specified unsupported claims; qualitative errors remain possible |
-| The support uses RAG | Implemented local BM25 retrieval over 25 approved support passages, separate from live order reads |
-| The model was fine-tuned | Unsupported as a weights claim; prompts/context/retrieval/decoding were tuned and synthetic training pairs prepared |
+| The support uses RAG | Implemented BM25 + Gemini embeddings/rank fusion over 25 approved passages, separate from live order reads |
+| The model was fine-tuned | Outside current scope; no weight training is implemented |
 | The system is completely safe | Unsupported; describe specific controls and the remaining MVP gaps |
-| Qwen is the best model | Unsupported; it is the current local implementation choice, not a benchmark winner |
+| Gemini is the best model | Unsupported; it is the current configured provider, not a benchmark winner |
 | It is connected to WhatsApp | Browser simulation today; official channel integration is proposed |
 | It books pickups/refunds | It records synthetic booking/refund stages; no external booking/payment occurs |
 | All systems are always synchronized | Shared local state and scoped notifications exist; durable cross-provider synchronization is proposed |
@@ -54,9 +67,9 @@ Still unverified: a real retailer/Meta/courier/gateway/helpdesk connection; comp
 
 **Why use AI at all?** To understand varied wording/follow-ups and phrase contextual explanations. RAG supplies approved reference content; APIs supply current facts; rules calculate; the state machine collects reported answers; staff decides exceptions. Compare on an unseen set before claiming model superiority.
 
-**Is this RAG?** Yes. The phone retrieves approved passages using a local BM25 index with topic filtering/boosts, then supplies them to the model. There is no vector database or embedding API. Current order/payment facts still require authorized live reads. See [document 18](18-conversational-rag.md).
+**Is this RAG?** Yes: approved-guide BM25 plus Gemini document/query embeddings, cosine ranking and rank fusion. A local versioned vector cache avoids repeated document embedding. Source failure is explicit; current order/payment facts still require owned live reads. See [document 19](19-gemini-hybrid-live-data.md).
 
-**Did we fine-tune the model?** No weights or LoRA adapter have been trained. We tuned instructions, context, retrieval, schema and decoding (default temperature 0.2/top-p 0.8). Sixteen synthetic training pairs and a real training/evaluation plan are in [training](../training/README.md). Temperature controls sampling variability, not understanding by itself.
+**Did we fine-tune the model?** Fine-tuning is outside current scope. The implemented project is Gemini + hybrid RAG + current database reads and guarded workflows. Earlier training material is historical, not a running feature.
 
 **Can the model read the whole database?** No generic database/SQL tool is exposed. The workflow executes named reads with server-bound identity. That does not make the demo's identity shortcuts production-safe.
 

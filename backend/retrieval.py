@@ -129,7 +129,20 @@ class GuideIndex:
     @staticmethod
     def evidence(documents):
         return [
-            {k: d[k] for k in ("id", "title", "version", "source", "digest", "score")}
+            {
+                k: d[k]
+                for k in (
+                    "id",
+                    "title",
+                    "version",
+                    "source",
+                    "digest",
+                    "score",
+                    "semantic_score",
+                    "lexical_score",
+                )
+                if k in d
+            }
             for d in documents
         ]
 

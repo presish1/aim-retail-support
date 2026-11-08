@@ -2,11 +2,11 @@
 
 **Audience:** MBA AI in Management team. **Purpose:** help the team build its own presentation now. This is a content and speaker-note pack, not a claim that the production integrations are finished.
 
-Use the [system guide](../SYSTEM_GUIDE.md) for the complete explanation and [documentation map](README.md) for deeper questions. All prototype records are fictional. Current scope is local v0.6; [document 18](18-conversational-rag.md) explains RAG and the model's conversational role.
+Use the [system guide](../SYSTEM_GUIDE.md) and [documentation map](README.md). Current scope is v0.7: Gemini + hybrid RAG + live database reads. [Document 19](19-gemini-hybrid-live-data.md) gives the detailed architecture. Records are fictional; generation and embedding API calls are real. Fine-tuning is outside scope.
 
 ## The one-minute story
 
-> Scenario A receives 400 customer queries per day, mainly about order status and returns. We recommend supervised AI support connected to the retailer's operational systems. Our MVP demonstrates this with a live local database: customers ask naturally, get focused order answers or prepare a return without repeating themselves. Qwen understands the concern and phrases a response using approved retrieved guidance. Backend functions supply current factual paragraphs and control actions; staff keeps approval and refund responsibility. Changing fulfilment changes the next answer. Source failure blocks guesses. Real WhatsApp, courier and payment adapters are the next stage.
+> Scenario A receives 400 queries per day, mainly about status and returns. Our MVP combines Gemini, hybrid retrieval and a live local order database. Semantic embeddings and keyword search find approved guidance; Gemini understands the concern and writes helpful language. Owned database reads supply exact operational facts. Backend rules control returns and staff keeps commercial responsibility. A dashboard edit changes the next answer; an outage blocks guesses. Real WhatsApp and retailer/courier/payment adapters are the next stage.
 
 ## Suggested ten-part presentation
 
@@ -30,7 +30,7 @@ These are content suggestions, not an instructor-supplied slide count. Each row 
 ```mermaid
 flowchart LR
     C[Customer message] --> W[Workflow and account binding]
-    W --> KB[Approved support-guide retrieval]
+    W --> KB[Hybrid keyword and semantic RAG]
     KB --> AI[AI understands and phrases]
     AI --> W
     W --> T[Authorized reads and rules]
@@ -71,14 +71,16 @@ The first six steps are the core live-data proof. Use the return sequence as a s
 | “The courier API is live.” | “The MVP reads a mutable local source. Courier tracking/serviceability are proposed adapters.” |
 | “The customer has been authenticated.” | “The demo matched a fictional account. Production must verify access before disclosure.” |
 | “The refund has reached the bank.” | “A synthetic refund was recorded after the staff gate. Gateway state and bank-credit confirmation are different.” |
-| “All our tests prove AI accuracy.” | “Backend cases and authored real-Qwen conversations verify defined development scenarios. They are not an unseen language benchmark or production reliability estimate.” |
-| “We fine-tuned Qwen.” | “We tuned prompts, context, RAG, structured output and sampling. We prepared synthetic examples; the model weights remain unchanged.” |
+| “All our tests prove AI accuracy.” | “Backend cases, authored Gemini conversations and retrieval comparisons verify defined development scenarios. They are not an unseen benchmark.” |
+| “We fine-tuned the model.” | “The project implements hybrid RAG and live-data grounding. Fine-tuning is outside its scope.” |
 | “We save X% or eliminate Y jobs.” | “We hypothesize less repetitive work; measure sustained resolution, time, escalation capacity and total cost first.” |
 | “We replace the existing ERP.” | “The proposed service reads and coordinates existing systems. The dashboard stands in for them during this MVP.” |
 
 ## Why use AI if rules provide the facts?
 
-AI's potential value is understanding varied wording, keeping the concern in context and phrasing helpful guidance. RAG retrieves approved explanations; APIs supply current facts; rules calculate eligibility; the state machine gathers reported return answers; people decide exceptions. The repository includes a rules baseline using the same backend. Compare on unseen customer tasks before claiming an advantage. Phone sampling defaults are temperature 0.2 and top-p 0.8; these limit variation, not establish truth or train new weights.
+Gemini's role is understanding wording/context and writing helpful guidance. Hybrid RAG retrieves approved explanations; authorized reads supply current facts; rules calculate eligibility; the state machine gathers reported answers; people decide exceptions. The rules baseline shares the same business boundary. Compare on unseen customer tasks before claiming an advantage. Provider sampling defaults and LOW thinking do not establish truth.
+
+**What makes this more than an API wrapper:** account and order ownership, persistent operational records, hybrid ranking and versioned vector cache, current read contracts/revisions, grounded reply compilation, resumable return intake, staff gates, scoped events, failure behavior and inspectable evaluation. Show the ERP evidence panel, not only the chat bubbles.
 
 ## Questions an instructor may ask
 

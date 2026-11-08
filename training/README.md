@@ -1,5 +1,7 @@
 # Support tuning material
 
+**Historical exploration; outside current v0.7 scope.** No training job, adapter or runtime example-training pipeline is implemented. The active project focuses on [Gemini, hybrid RAG and current database reads](../docs/19-gemini-hybrid-live-data.md). Material below describes the earlier v0.6 proposal, not a feature to claim in the presentation.
+
 The running v0.6 uses **RAG, prompt examples, a structured response schema, and low-variance decoding**. Qwen3-8B's weights have **not** been fine-tuned. A custom prompt or a different temperature is not weight fine-tuning.
 
 `support-examples.jsonl` contains 16 authored synthetic input/target pairs for prompt review and possible future supervised training. They cover intent/focus, relevant guide IDs and conversational opening/closing fields. The server inserts factual paragraphs separately. These pairs are not real customer data, a complete reviewed production dataset, or proof that an adapter improves quality. The inference prompt uses representative intent examples; it does not load this entire file on every request. A training pipeline would also need to construct the matching retrieved context for each pair.

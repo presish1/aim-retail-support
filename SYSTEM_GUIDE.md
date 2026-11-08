@@ -1,6 +1,6 @@
 # Threadline — complete MVP system guide
 
-**For the MBA presentation team and readers learning the system.** Local MVP v0.6, reviewed 8 November 2026. [Repository](https://github.com/presish1/aim-retail-support) · [Presentation briefing](docs/PRESENTATION_BRIEF.md) · [Documentation map](docs/README.md) · [Current conversation/RAG reference](docs/18-conversational-rag.md).
+**For the MBA presentation team and readers learning the system.** Local MVP v0.7, reviewed 8 November 2026. [Repository](https://github.com/presish1/aim-retail-support) · [Presentation briefing](docs/PRESENTATION_BRIEF.md) · [Documentation map](docs/README.md) · [Current Gemini/RAG/live-data reference](docs/19-gemini-hybrid-live-data.md).
 
 ## What it actually is
 
@@ -17,7 +17,7 @@ The management recommendation is to automate bounded information retrieval and s
 | Area | Implemented MVP | Proposed production work |
 | --- | --- | --- |
 | Customer channel | Phone-only WhatsApp-style browser UI, real WebSocket, resume, reply buttons and photo uploads | Official WhatsApp Business Platform adapter |
-| AI | Local Ollama `qwen3:8b`, typed support understanding and reply drafting, approved-guide RAG, factual blocks, rules baseline and labeled fallback | Held-out model/retrieval comparison; real weight tuning only if justified |
+| AI | Gemini 3.8 Flash, typed understanding/writing, hybrid semantic/keyword RAG, factual blocks, rules baseline and labeled fallback | Unseen customer/model/retrieval evaluation and production deployment review |
 | Identity | Existing synthetic account match or optional local code challenge | Real customer account linking, verified possession, staff authentication and permissions |
 | Data | Current SQLite customer/order/payment/return records | Existing commerce/OMS, courier and payment source adapters |
 | Returns | Questions, photos, quantity/address/window, review, explicit RMA submission and staff lifecycle | Real serviceability, reverse shipment, pickup and gateway reconciliation |
@@ -48,7 +48,7 @@ There is also a useful comparison with other chatbot designs:
 | Rules bot connected to APIs | Structured lookup and fixed workflows | Can provide the same factual controls; the MVP's model must prove added language value |
 | This MVP | Contextual understanding/writing with retrieved guidance, validated live facts, return intake and staff workflow | Demonstrates how those responsibilities fit together; it is not proof of a unique capability or superiority over existing software |
 
-Version 0.6 adds the conversational/RAG layer described below. The underlying live reads, operational records and commercial-action gates remain in place.
+Version 0.7 uses native Gemini generation and Gemini embeddings with BM25/rank fusion. Live reads, persistent records and commercial-action gates remain. Fine-tuning is outside the scope.
 
 ## Architecture in plain language
 
@@ -57,7 +57,7 @@ flowchart TD
     C[Customer phone] --> CH[Channel and account binding]
     CH --> W[Bounded workflow]
     W --> KB[Approved support-guide retrieval]
-    KB --> M[Qwen: understand concern and draft wording]
+    KB --> M[Gemini: understand concern and draft wording]
     M --> W
     W --> G[Authorized reads and business rules]
     G --> DB[(Current order and return records)]
@@ -71,14 +71,14 @@ flowchart TD
     W --> E[Evidence and support handoff]
 ```
 
-The current application is a modular monolith, not a cluster of independent AI agents. React supplies two experiences. FastAPI runs the conversation, operations and read/rule layers. SQLite stores current records. Ollama runs the model locally. An in-process hub distributes local WebSocket events. Vite proxies the development UI's `/api` traffic to FastAPI.
+The application is a modular monolith. React supplies two experiences. FastAPI runs conversation, operations and read/rule layers; SQLite stores current records. Google hosts generation and embeddings, while a small local cache stores approved guide vectors. An in-process hub distributes WebSocket events. Vite proxies `/api` traffic to FastAPI. No local model download is required.
 
 | Layer | Job | Main code |
 | --- | --- | --- |
 | Experience/channel | Phone and ERP; messages, forms, acknowledgements and reconnect | `src/WhatsApp.tsx`, `src/App.tsx`, `backend/whatsapp.py` |
 | Identity/session | Bind a customer in server state; separate operator capability | `backend/app.py`, `backend/whatsapp.py` |
 | Conversation workflow | Context, requested details, approved guidance, clarify, return intake or handoff | `backend/support.py`, `backend/returns_flow.py` |
-| AI and retrieval | One typed understanding/writing call; approved local BM25 guide search | `backend/support_plan.py`, `backend/retrieval.py`, `backend/model.py` |
+| AI and retrieval | One typed Gemini understanding/writing call; hybrid BM25/semantic search and document cache | `backend/support_plan.py`, `backend/retrieval.py`, `backend/hybrid.py`, `backend/gemini.py` |
 | Read/rule boundary | Ownership, source health, source validation and policy calculation | `backend/reads.py`, `backend/service.py` |
 | Operations/storage | Record changes, revisions, returns, tickets and transaction checks | `backend/erp.py`, `backend/store.py`, `backend/media.py` |
 | Response/evidence/sync | Compile checked wording with factual blocks, record provenance and announce changes | `backend/composition.py`, `backend/support.py`, `backend/whatsapp.py`, `src/useWorkspace.ts` |
@@ -131,13 +131,13 @@ The central design decision is to keep transactional values outside generated pr
 
 This does not guarantee zero mistakes. Sources can be wrong; the model can misunderstand an issue or add a qualitative statement that the validator misses; item heuristics, templates and rules can contain bugs; customer reports may be inaccurate; a feed may lag without a correct health signal. Tests establish behavior in defined cases, not a universal hallucination rate. [Document 11](docs/11-grounding-and-safety.md) connects controls to residual risk.
 
-## RAG, temperature and fine-tuning
+## Hybrid RAG and live facts
 
-The current RAG retrieves from 25 approved support passages using local BM25 with topic boosts. It supplies explanations and response guidance; it does not store customers' orders or replace current API reads. Numeric return windows still come from the structured policy. ERP Conversations exposes retrieved/used passage IDs, version/digest, named reads and whether model wording was accepted.
+RAG retrieves from 25 approved passages using BM25, 768-dimensional Gemini embeddings, cosine ranking and reciprocal-rank fusion. Document vectors are cached by corpus/model/dimension; guide edits invalidate the cache. Semantic failure is explicitly labeled and falls back to approved keyword retrieval. Orders, transcripts and uploads are not indexed. RAG explains policy/process; current owned database reads supply operational facts and numeric policy values.
 
-Qwen3-8B runs through local Ollama. Phone defaults are temperature **0.2**, top-p **0.8**, non-thinking mode, context limit 6,144 tokens and output limit 380 tokens. One free-text turn has at most one model call; exact buttons/social turns can avoid inference. Temperature controls sampling variability. Understanding depends on the model, instructions, examples, conversation context and retrieval.
+Gemini 3.8 Flash uses native structured output, provider sampling defaults, LOW thinking, a 2,048-token output cap and 30-second timeout. Temperature/top-p are omitted for this provider. There is at most one generation call per support turn, plus a query embedding when semantic retrieval is used. Exact actions/social turns can avoid both. ERP evidence shows the actual model, retrieval method, passage IDs/version/digest, order revision/fetch time, reads and composition decision.
 
-**The weights have not been fine-tuned.** This release improves prompts, retrieval, context, schema and decoding. Sixteen synthetic training examples and a genuine future tuning/evaluation plan are included under [training](training/README.md). See [document 18](docs/18-conversational-rag.md) for the full contract, examples and remaining limits.
+**Fine-tuning is outside current scope.** The architecture's substance is hybrid retrieval, authorized live data, deterministic rules/transactions, guarded intake, synchronization and evaluation. [Document 19](docs/19-gemini-hybrid-live-data.md) explains each layer and its authority. Earlier training material is historical and is not an implemented feature.
 
 ## Why “totally safe” would be inaccurate
 
@@ -192,7 +192,7 @@ Present the MVP's feasibility and a conditional pilot recommendation. First iden
 
 Measure correct task/order/item selection, factual matching, disclosures/actions, handoff quality, useful-answer latency, stale sources, message failures and total cost. Count queries, cases and messages separately. Four hundred daily queries is an assignment input, not a measured peak-concurrency trace. Capacity saved is not automatically payroll cash saved.
 
-The backend suite covers defined source, conversation, retrieval, transport and transaction conditions; many cases use baseline routing or model doubles. The current runner also executes 16 authored multi-turn scenarios in baseline and real-Qwen mode. These development regressions are not an unseen benchmark. Production language performance, load, external providers, security and ROI remain to be established. [Evidence and FAQ](docs/17-evidence-and-faq.md) records counts, results and presentation-safe claims.
+The backend suite covers defined source, conversation, retrieval, provider failure, transport and transaction conditions. The current runner executes 18 authored scenarios in baseline and real-Gemini mode, including live estimate/tracking mutations. A separate 12-query test compares keyword versus hybrid retrieval. These development regressions are not an unseen benchmark. [Evidence and FAQ](docs/17-evidence-and-faq.md) records results and remaining production gaps.
 
 ## Learning from this repository with an assistant
 

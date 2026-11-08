@@ -14,5 +14,7 @@
   {"id":"cross_account","turns":["aarav@example.com","Track order 4901"],"expect":{"outcome":"INACCESSIBLE_ORDER","not_contains":"Utility Jacket"}},
   {"id":"source_outage","turns":["aarav@example.com","4812","Check the latest status"],"controls_before_last":{"order_api_available":false},"expect":{"outcome":"ORDER_SERVICE_UNAVAILABLE","not_contains":"9 November"}},
   {"id":"human_preserves_draft","turns":["aarav@example.com","Return order 4813","Size or fit","I want to speak to a person"],"expect":{"outcome":"HANDOFF_CREATED","draft_step":"condition","ticket_count":1}},
-  {"id":"different_purchase","turns":["aarav@example.com","4812","I want to return the white shirt"],"expect":{"order":"4813","draft_step":"reason"}}
+  {"id":"different_purchase","turns":["aarav@example.com","4812","I want to return the white shirt"],"expect":{"order":"4813","draft_step":"reason"}},
+  {"id":"live_estimate_change","turns":["aarav@example.com","4812","When should it arrive?","Can you check again?"],"order_updates_before_last":{"4812":{"carrier_eta_date":"2026-11-12"}},"expect":{"order":"4812","contains":"12 November","not_contains":"9 November"}},
+  {"id":"live_tracking_change","turns":["aarav@example.com","4812","Just the tracking reference please","Just the tracking reference please"],"order_updates_before_last":{"4812":{"tracking_reference":"CURRENT-AWB-555"}},"expect":{"order":"4812","contains":"CURRENT-AWB-555","not_contains":"DEMO4812IN"}}
 ]

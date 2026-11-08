@@ -4,7 +4,7 @@
 
 ## A. Current phone orchestration and legacy model tools
 
-In v0.6 the phone uses a typed support plan from [support_plan.py](../backend/support_plan.py). [support.py](../backend/support.py) retrieves guidance and dispatches authorized reads or guarded workflows. The model does not emit a free-running API sequence. Its fields are intent, facets, emotion, literal item hint, guide IDs, conversational opening and closing. The server inserts required factual paragraphs between them. Reported return answers and consent are parsed separately. [Document 18](18-conversational-rag.md) specifies the current path.
+In v0.7 the phone uses a typed Gemini support plan from [support_plan.py](../backend/support_plan.py). [support.py](../backend/support.py) runs hybrid retrieval and dispatches authorized reads or guarded workflows. The model does not emit a free-running API sequence. Its fields are intent, facets, emotion, literal item hint, guide IDs, conversational opening and closing. The server inserts factual paragraphs between them. Reported return answers and consent are parsed separately. [Document 19](19-gemini-hybrid-live-data.md) specifies the current path.
 
 The following four model-callable schemas remain in the **legacy HTTP chat path**, not the new phone's generation contract:
 

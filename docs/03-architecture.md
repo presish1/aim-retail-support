@@ -1,10 +1,10 @@
 # 03 — Architecture: current MVP and proposed integrations
 
-**Current local implementation: v0.6 · 8 November 2026.** The [system guide](../SYSTEM_GUIDE.md) is the business explanation; [document 18](18-conversational-rag.md) details the new conversation/RAG contract. The production diagram is a proposal.
+**Current implementation: v0.7 · 8 November 2026.** The [system guide](../SYSTEM_GUIDE.md) is the business explanation; [document 19](19-gemini-hybrid-live-data.md) specifies Gemini, hybrid RAG and the live-data contract. The production diagram is a proposal.
 
 ## The design decision
 
-Use a bounded application workflow. The phone model understands the concern and drafts language from approved retrieved guidance. Backend code owns identity, permissions, factual values, calculations and writes; a compiler validates wording and inserts factual paragraphs. Return intake is a state machine. There is no autonomous multi-agent framework, arbitrary SQL tool, vector database or weight fine-tuning. BM25 retrieval is local.
+Use a bounded workflow. Gemini understands the concern and writes language from approved retrieved guidance. Backend code owns identity, permissions, factual values, calculations and writes; a compiler checks language and inserts factual paragraphs. Return intake is a state machine. RAG combines local BM25, Gemini embeddings and a local document-vector cache. No arbitrary SQL tool, autonomous agent framework or weight training is used.
 
 ## Current deployment
 
@@ -18,19 +18,21 @@ flowchart LR
         V[Vite :5173]
         API[FastAPI :8000]
         WF[Conversation and return workflow]
-        KB[Approved guide index - BM25]
+        KB[Approved guide index - BM25 and vector cache]
         COMP[Reply compiler and source fallback]
         READ[Authorized reads and rules]
         DB[(SQLite)]
         FILES[Local photo files]
         HUB[In-process WebSocket hub]
-        O[Ollama :11434]
     end
+    O[Google Gemini generation API]
+    E[Google Gemini embedding API]
     PHONE --> V
     ERP --> V
     V -->|HTTP and WebSocket /api proxy| API
     API --> WF
     WF --> KB
+    KB <--> E
     KB -->|Retrieved reference context| O
     O -->|Typed plan and draft wording| WF
     WF --> READ --> DB
@@ -53,7 +55,7 @@ flowchart LR
 | API/channel boundary | Request validation, synthetic sessions, local origins/capabilities, sockets, media | [app.py](../backend/app.py), [media.py](../backend/media.py) |
 | Channel | Contact/code stages, sockets, message IDs, retry/resume | [whatsapp.py](../backend/whatsapp.py) |
 | Conversation | Context, focused questions, guide retrieval, draft interruptions, read orchestration, handoff and traces | [support.py](../backend/support.py) |
-| AI and retrieval | Typed support plan/reply, decoding and local approved-guide BM25 | [support_plan.py](../backend/support_plan.py), [retrieval.py](../backend/retrieval.py), [model.py](../backend/model.py) |
+| AI and retrieval | Typed Gemini turn, hybrid ranking, embeddings/cache and provider boundary | [support_plan.py](../backend/support_plan.py), [retrieval.py](../backend/retrieval.py), [hybrid.py](../backend/hybrid.py), [gemini.py](../backend/gemini.py) |
 | Reply compiler | Required factual blocks, targeted generated-text checks and rejection reason | [composition.py](../backend/composition.py) |
 | Business workflow / legacy HTTP chat | Return rules, source errors, support persistence, older four-tool route and source renderers | [service.py](../backend/service.py) |
 | Read/rule boundary | Ownership, healthy source, validated records and exact policy version | [reads.py](../backend/reads.py), `Workflow.return_result` in [service.py](../backend/service.py) |

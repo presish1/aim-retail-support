@@ -15,6 +15,7 @@ from .retrieval import guides
 from .service import iso_now, date_label, parse_time
 from .support_plan import SupportPlan, ReportedSlots, explicit_slots, fallback_plan
 from .composition import compile_reply
+from .hybrid import HybridRetriever
 
 TOPICS = {
     "identity": ["identity"],
@@ -138,6 +139,7 @@ class SupportConversation:
     def __init__(self, channel):
         self.channel = channel
         self.store, self.workflow = channel.store, channel.workflow
+        self.retriever = HybridRetriever(self.workflow.model)
 
     def context(self, record):
         recent = record["messages"][record.get("context_start", 0) :][-4:]
@@ -265,8 +267,15 @@ class SupportConversation:
         used_mode, note = "baseline", None
         usage = {"input_tokens": 0, "output_tokens": 0}
         plan = fallback
+        retrieval_details = {"method": "BM25 + approved topic filter"}
         if mode == "model" and not fast:
             try:
+                preliminary, retrieval_details = await self.retriever.search(
+                    guides,
+                    text + " " + context["last_intent"],
+                    topics=focus_topics or TOPICS.get(fallback.intent, []),
+                    limit=4,
+                )
                 planner = getattr(self.workflow.model, "plan_support", None)
                 if planner is None:
                     raise ModelUnavailable("Planner not configured for this adapter")
@@ -312,6 +321,16 @@ class SupportConversation:
             specific = [f for f in fallback.facets if f != "summary"]
             plan.facets = specific or plan.facets or fallback.facets
         if (
+            fallback.intent == "order_status"
+            and not fallback.facets
+            and re.search(
+                r"where is (?:my|the) (?:order|parcel)|check(?: it)? again|latest (?:order )?status|order status",
+                text,
+                re.I,
+            )
+        ):
+            plan.intent, plan.facets = "order_status", ["summary"]
+        if (
             context["return_step"]
             and not plan.interrupts_return
             and any(explicit.model_dump().values())
@@ -356,6 +375,7 @@ class SupportConversation:
             "planning_retrieved": preliminary,
             "planning_digest": planning_digest,
             "planning_revision": known["revision"] if known else None,
+            "retrieval_details": retrieval_details,
             "plan": plan,
         }
         return plan, meta
@@ -477,7 +497,10 @@ class SupportConversation:
             "plan": plan.model_dump(),
             "reads": list(read_audit.get() or []),
             "retrieval": {
-                "method": "BM25 + approved topic filter",
+                **meta.get(
+                    "retrieval_details", {"method": "BM25 + approved topic filter"}
+                ),
+                "answer_selection": "approved topic/ID lookup after model planning",
                 "version": guides.version,
                 "chunks": guides.evidence(meta["retrieved"]),
             },
@@ -514,9 +537,11 @@ class SupportConversation:
             "fallback_reason": composition_note,
         }
         trace["decoding"] = {
-            "temperature": getattr(self.workflow.model, "support_temperature", 0.2),
-            "top_p": getattr(self.workflow.model, "support_top_p", 0.8),
-            "thinking": False,
+            **(
+                self.workflow.model.decoding()
+                if hasattr(self.workflow.model, "decoding")
+                else {"temperature": 0.2, "thinking": False}
+            ),
             "max_model_calls_per_turn": 1,
             "fact_cache": False,
         }

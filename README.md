@@ -1,11 +1,11 @@
 # Threadline
 ### Order & returns support, grounded in the order system
 
-**AI in Management · MBA · Scenario A · Working prototype v0.6 · 8 November 2026**
+**AI in Management · MBA · Scenario A · Working prototype v0.7 · 8 November 2026**
 
 > Recommend a small, supervised AI service that answers routine post-purchase questions using current order records, checks return eligibility with explicit business rules, and hands exceptions to a person with the context attached.
 
-This repository contains the **working local prototype**, service design, and architecture for an academic consulting assignment. It connects Qwen3-8B to an API-backed synthetic order database. “Threadline” is a working concept name; the retailer and all example records are fictional.
+This repository contains the **working prototype**, service design and architecture for an academic consulting assignment. It combines Gemini, hybrid semantic/keyword RAG and an API-backed live synthetic order database. “Threadline” and all example records are fictional. [Read the current architecture](docs/19-gemini-hybrid-live-data.md).
 
 ## Preparing the team presentation
 
@@ -33,19 +33,19 @@ Saving a selected order's status, carrier estimate, or tracking details sends a 
 
 Catalogue prices are illustrative INR prices; policy and delivery dates use IST. Customer replies include product photographs, order details, payment status, and useful reply buttons. Return intake collects the item, reason, condition, tags, optional photos, quantity, pickup address and preferred window, then asks for explicit submission. The ERP continues through approval, carrier booking, receipt, inspection and recorded refund. No carrier booking or payment is executed.
 
-The [return design and read contracts](docs/10-grounded-india-returns.md) explain the factual boundary and return journey. The [v0.6 conversational/RAG reference](docs/18-conversational-rag.md) explains model-written replies, approved guidance retrieval, natural return answers and safeguards. Photos and credits are bundled under [public/products](public/products/credits.json).
+The [return design and read contracts](docs/10-grounded-india-returns.md) explain the factual boundary and return journey. The [current Gemini/RAG reference](docs/19-gemini-hybrid-live-data.md) explains the model, retrieval, live reads and safeguards. Photos and credits are bundled under [public/products](public/products/credits.json).
 
 ## Conversational support and RAG
 
-The phone uses Qwen3-8B to understand follow-ups and draft useful replies from a versioned, 25-passage support guide. General policy questions need no email. Ask for only a tracking number, ask several order details together, describe a fit issue naturally, or interrupt a return with a question: the controller keeps the account, purchase and pending step in context.
+The phone uses **Gemini 3.8 Flash** with a versioned, 25-passage support corpus. **Hybrid RAG combines BM25, Gemini embeddings and reciprocal-rank fusion** to find relevant explanations. General help needs no email; the controller keeps the account, purchase and return step in context.
 
 Current order facts come from fresh authorized reads and locked factual paragraphs. Generated wording is checked before use; rejected wording falls back to the approved/source renderer. Return submission and staff decisions remain guarded workflows. ERP Conversations shows the intent, guidance, reads and actual model/fallback behavior.
 
-Phone generation defaults to **temperature 0.2, top-p 0.8**, one model call per free-text turn. This is prompt/retrieval/decoding tuning; **the model weights have not been fine-tuned**. [Synthetic training examples and the training plan](training/README.md) are included for a future measured experiment.
+Gemini uses provider sampling defaults, LOW thinking and at most one generation call per free-text turn. Query embeddings are separate; approved document vectors are cached and invalidated when the guide changes. Fine-tuning is outside the current scope. The system's evidence comes from retrieval, live read contracts, guarded workflows and recorded checks.
 
 ## Run the prototype
 
-Requires Node.js 20.19+ or 22.12+, Python 3.11+, and [Ollama](https://ollama.com/). The tested setup uses local Ollama, so no model API key is needed. The Q4 model download is approximately 5.2 GB; check available memory and storage for your machine.
+Requires Node.js 20.19+ or 22.12+, Python 3.11+, internet and a Gemini API key with generation/embedding access. No local model download or Ollama installation is required.
 
 ```sh
 git clone https://github.com/presish1/aim-retail-support.git
@@ -53,21 +53,22 @@ cd aim-retail-support
 npm ci
 python3 -m venv .venv
 .venv/bin/python -m pip install -r backend/requirements.lock
-ollama pull qwen3:8b
+cp .env.example .env
+# Add your own THREADLINE_MODEL_API_KEY to .env using an editor.
 npm run dev
 ```
 
-Ollama must be running. The dev command starts both Vite and FastAPI; customers, orders, returns, conversations, tickets, and activity persist in ignored `artifacts/local/threadline.db`. **Settings → Restore sample data** restores 8 fictional customers and 14 orders and clears subsequent demo activity.
+The dev command starts Vite and FastAPI; records persist in ignored `artifacts/local/threadline.db`. Approved guide vectors are cached under `artifacts/local/retrieval/`. **Settings → Restore sample data** restores 8 fictional customers and 14 orders and clears subsequent demo activity.
 
 For a built frontend served by FastAPI alone: `npm run build`, then `npm start`, then open `http://127.0.0.1:8000`.
 
-Optional: copy `.env.example` to `.env` to configure another local model or compatible hosted inference endpoint. Environment variables take precedence. Keys stay on the backend; never commit `.env`. The user-selected store region is India. A production processing region and data handling terms still need an owner decision.
+Environment variables override `.env`. Keys stay on the backend; never commit `.env`. Optional legacy Ollama/compatible adapters remain in code. The store region is India; a production cloud-processing region and data handling terms still need an owner decision.
 
 ```sh
 npm test
 npm run build
-.venv/bin/python evaluation/run_smoke.py --output artifacts/local/model-smoke.json
 .venv/bin/python evaluation/run_conversations.py --modes baseline model --output artifacts/local/conversations.json
+.venv/bin/python evaluation/run_retrieval.py --output artifacts/local/retrieval.json
 ```
 
 **First demo:** open customer chat → ask about an order → use `aarav@example.com` → select #4812 → find #4812 in ERP Orders → set Delivered in its inline selector → see the order update arrive in chat → ask “Can you check again?” → inspect the conversation and response evidence in ERP Conversations.
@@ -88,7 +89,7 @@ Our central design question:
 
 1. A customer asks, “Where is my order?” or “Can I return the shirt?”
 2. The service verifies access to the purchase and reads its current record.
-3. A small language model interprets the concern and phrases a reply using approved retrieved guidance. Backend rules determine eligibility; fresh structured reads supply dates and status.
+3. Gemini interprets the concern and phrases a reply using approved hybrid retrieval. Backend rules determine eligibility; fresh structured reads supply dates and status.
 4. The customer receives the requested details and a useful next step. The compiler checks generated wording before inserting verified factual paragraphs.
 5. Missing data, exceptions, and requests for a person create a handoff with verified context.
 
@@ -101,7 +102,7 @@ flowchart LR
     C[Customer channel] --> S[Session & identity verification]
     S --> W[Bounded support workflow]
     W --> K[Approved support-guide retrieval]
-    K --> M[Replaceable open-weight model]
+    K --> M[Gemini structured generation]
     M --> W
     W --> T[Authorized tool gateway]
     T <--> O[(Live order system)]
@@ -111,7 +112,7 @@ flowchart LR
     F --> C
 ```
 
-The phone model produces a typed intent, requested details, guidance IDs and a reply draft. The backend owns authorization, calculations, permissions, factual values and writes. A rules baseline uses the same business boundary. The older four-tool HTTP route remains for compatibility. [Read the complete current design](docs/18-conversational-rag.md).
+The phone model produces a typed intent, requested details, guidance IDs and conversational opening/closing. The backend owns authorization, calculations, permissions, factual values and writes. A rules baseline uses the same business boundary. [Read the current design](docs/19-gemini-hybrid-live-data.md).
 
 ## Read the design package
 
@@ -128,7 +129,7 @@ The phone model produces a typed intent, requested details, guidance IDs and a r
 | [MVP-to-pilot plan](docs/15-production-plan-and-operations.md) | Integration gates, operational owners, evaluation and economics |
 | [API and data reference](docs/16-api-and-data-reference.md) | Implemented endpoints, WebSocket protocol, records and configuration |
 | [Evidence and FAQ](docs/17-evidence-and-faq.md) | What the tests demonstrate, untested areas and presentation answers |
-| [Conversational support and RAG](docs/18-conversational-rag.md) | Current model role, retrieval, factual blocks, decoding and fine-tuning boundaries |
+| [Gemini, hybrid RAG and live data](docs/19-gemini-hybrid-live-data.md) | Current pipeline, embeddings/cache, exact database reads, grounding and evidence |
 | [Documentation map and history](docs/README.md) | Reading paths and earlier definition, model, business-case and design notes |
 | [Sources](docs/sources.md) | Primary references checked for the model and deployment discussion |
 | [Demo data](data/README.md) | Eight synthetic customers, fourteen sample orders, an illustrative policy, and a fixed demo clock |
@@ -145,8 +146,8 @@ The phone model produces a typed intent, requested details, guidance IDs and a r
 
 ## Repository status
 
-**Completed:** operations ERP, phone-only customer channel, contextual Qwen3-8B support, local approved-guide RAG, validated generated wording, persistent records, live updates, natural return intake, failure controls, deduplicated support requests, readable response evidence and a rules baseline.
+**Completed:** operations ERP, phone-only chat, Gemini support, hybrid semantic/keyword RAG, checked wording, persistent operational records, live updates, natural return intake, failure controls, deduplicated support requests, readable evidence and a rules baseline.
 
-**Verified locally:** 150 backend cases and the production build pass. The [evidence register](docs/17-evidence-and-faq.md) records authored real-Qwen conversations, browser checks and their limits. These are development regressions, not an unseen benchmark or production reliability estimate. The [v0.2 smoke run](evaluation/results/local-qwen3-smoke.json) remains historical integration evidence.
+**Verification:** the [evidence register](docs/17-evidence-and-faq.md) records backend tests, real Gemini conversations, mutable-database checks, lexical/hybrid comparison and browser checks. These are authored development regressions, not unseen accuracy or a production reliability estimate. Earlier Qwen results remain historical.
 
 **Next:** a separate held-out paraphrase/multi-turn evaluation, measured model comparison and cost analysis, then presentation evidence. An actual retailer pilot also needs its real systems, verification, and deployment review.

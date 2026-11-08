@@ -1425,6 +1425,42 @@ export function ConversationView({
               ? "Model-written support language with verified fact blocks."
               : "Source-backed response or validated workflow step."}
           </p>
+          {record.latest_trace.model && (
+            <p>
+              <strong>Inference:</strong> {record.latest_trace.model}
+            </p>
+          )}
+          {record.latest_trace.retrieval && (
+            <p>
+              <strong>Knowledge retrieval:</strong>{" "}
+              {record.latest_trace.retrieval.method}
+              {record.latest_trace.retrieval.embedding_model && (
+                <> · {record.latest_trace.retrieval.embedding_model}</>
+              )}
+            </p>
+          )}
+          {record.latest_trace.evidence && (
+            <dl>
+              <dt>Live order read</dt>
+              <dd>
+                #{record.latest_trace.evidence.order_id} · revision{" "}
+                {record.latest_trace.evidence.revision ?? "unavailable"}
+              </dd>
+              <dt>Read at</dt>
+              <dd>
+                {record.latest_trace.evidence.fetched_at
+                  ? new Date(
+                      record.latest_trace.evidence.fetched_at,
+                    ).toLocaleString("en-IN")
+                  : "See raw read evidence"}
+              </dd>
+            </dl>
+          )}
+          {record.latest_trace.retrieval?.fallback_reason && (
+            <small className="erp-muted">
+              {record.latest_trace.retrieval.fallback_reason}
+            </small>
+          )}
           {!!record.latest_trace.reads?.length && (
             <div className="erp-read-tags">
               {[
@@ -1437,7 +1473,14 @@ export function ConversationView({
           {!!record.latest_trace.retrieval?.used_chunk_ids?.length && (
             <div className="erp-guide-sources">
               <strong>Support guidance used</strong>
-              {record.latest_trace.retrieval.chunks
+              {[
+                ...new Map(
+                  [
+                    ...record.latest_trace.retrieval.chunks,
+                    ...(record.latest_trace.retrieval.planning_chunks || []),
+                  ].map((c) => [c.id, c]),
+                ).values(),
+              ]
                 .filter((c) =>
                   record.latest_trace!.retrieval!.used_chunk_ids.includes(c.id),
                 )

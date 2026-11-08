@@ -197,7 +197,7 @@ export const labels: Record<string, string> = {
   code: "Awaiting code",
   choose_order: "Choosing order",
   verified: "Account matched",
-  model: "Qwen3-8B",
+  model: "Model assisted",
   baseline: "Rules",
   system: "System update",
   baseline_fallback: "Fallback",

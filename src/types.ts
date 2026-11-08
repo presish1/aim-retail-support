@@ -14,6 +14,7 @@ export interface Order {
   carrier_eta_date: string | null;
   source_updated_at: string;
   fetched_at?: string;
+  revision?: number;
   policy_version: string;
   items: Item[];
 }
@@ -37,9 +38,19 @@ export interface Trace {
   reads?: { function: string; reference: string; revision?: number }[];
   retrieval?: {
     method: string;
+    embedding_model?: string | null;
+    document_cache?: string | null;
+    fallback_reason?: string | null;
     version: string;
     used_chunk_ids: string[];
     chunks: {
+      id: string;
+      title: string;
+      source: string;
+      score: number;
+      digest: string;
+    }[];
+    planning_chunks?: {
       id: string;
       title: string;
       source: string;

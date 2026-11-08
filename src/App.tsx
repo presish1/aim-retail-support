@@ -1308,7 +1308,7 @@ export default function App() {
                             setting("inference_mode", e.target.value)
                           }
                         >
-                          <option value="model">Qwen3-8B</option>
+                          <option value="model">Configured AI model</option>
                           <option value="baseline">Rules baseline</option>
                         </select>
                       </div>

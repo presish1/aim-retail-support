@@ -1,5 +1,7 @@
 # 18 — Conversational support, RAG and model tuning
 
+**Historical v0.6 design.** Current v0.7 uses Gemini and hybrid semantic/keyword retrieval, and excludes fine-tuning from scope. Read [document 19](19-gemini-hybrid-live-data.md) for present-tense model/retrieval/settings claims. The factual-block and guarded return design below is retained.
+
 **Implemented in local MVP v0.6 · 8 November 2026.** This is the current phone-chat design. The earlier four-tool HTTP workflow remains for compatibility. All accounts, orders and policies are fictional; no external retailer, courier or payment integration is implied.
 
 ## What changed

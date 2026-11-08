@@ -4,10 +4,12 @@ Checked **7 November 2026**. Availability, pricing, endpoint behavior, and provi
 
 ## Current MVP evidence and integration references
 
-External references below were checked 7 November; current v0.6 implementation references were updated 8 November 2026. Implementation claims come from repository code and defined local tests, not external marketing material. See [the evidence register](17-evidence-and-faq.md) and [presentation claim table](PRESENTATION_BRIEF.md).
+Earlier external references were checked 7 November; Gemini references and v0.7 implementation references were updated 8 November 2026. Implementation claims come from code and defined tests, not marketing material. See [the evidence register](17-evidence-and-faq.md) and [presentation claim table](PRESENTATION_BRIEF.md).
 
 | Primary reference | What was checked / used | Limit |
 | --- | --- | --- |
+| [Gemini latest-model migration](https://ai.google.dev/gemini-api/docs/latest-model), [structured output](https://ai.google.dev/gemini-api/docs/structured-output), [embeddings](https://ai.google.dev/gemini-api/docs/embeddings) | Native Gemini 3.8 generation, omitted sampling fields, LOW thinking; document/query embedding tasks and normalized 768-dimension vectors | Actual key/model access and payloads were tested separately; no general task-accuracy claim |
+| [Gemini adapter](../backend/gemini.py), [hybrid retrieval](../backend/hybrid.py), [provider/retrieval tests](../backend/tests/test_gemini_rag.py) | Request shape, source cache/fallback and secret-safe errors | No universal semantic correctness or production privacy certification |
 | [Support controller](../backend/support.py), [typed model turn](../backend/support_plan.py), [retrieval](../backend/retrieval.py), [compiler](../backend/composition.py) | Current phone RAG, context, generated wording and factual boundary | No universal semantic correctness or weight fine-tuning claim |
 | [Model adapter](../backend/model.py) and [workflow](../backend/service.py) | Legacy four-tool schemas, business rules, fallback and persistence | Source inspection does not prove broad language performance |
 | [Read boundary](../backend/reads.py), [return intake](../backend/returns_flow.py), [store](../backend/store.py), [ERP](../backend/erp.py) | Ownership, policy/value checks, explicit workflow and local transactions | Not a real retailer/courier/payment connection or a complete security audit |

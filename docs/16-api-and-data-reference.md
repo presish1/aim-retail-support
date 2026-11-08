@@ -1,6 +1,6 @@
 # 16 — Actual API, protocol and data reference
 
-**Local MVP v0.6.** Routes below exist in [app.py](../backend/app.py), [erp.py](../backend/erp.py) and [media.py](../backend/media.py). They are not the future Meta/courier/gateway endpoints. The application version and tool/record schemas are visible in source; generated FastAPI schema is available locally at `/openapi.json`. Version 0.6 changes phone support orchestration and evidence without adding a public RAG endpoint: [document 18](18-conversational-rag.md).
+**MVP v0.7.** Routes below exist in [app.py](../backend/app.py), [erp.py](../backend/erp.py) and [media.py](../backend/media.py). They are not the future Meta/courier/gateway endpoints. Generated FastAPI schema is at `/openapi.json`. Internal native Gemini and hybrid retrieval do not add a public RAG endpoint: [document 19](19-gemini-hybrid-live-data.md).
 
 ## Boundary conventions
 
@@ -83,13 +83,14 @@ Customer reads can produce `VERIFICATION_REQUIRED`, `INACCESSIBLE_ORDER`, `ORDER
 
 | Setting | Meaning |
 | --- | --- |
-| `THREADLINE_MODEL` | Default `qwen3:8b` |
-| `THREADLINE_MODEL_PROVIDER` | Default `ollama`; optional `compatible` chat-completions adapter |
-| `THREADLINE_MODEL_URL` | Default local Ollama URL; compatible endpoint configured separately |
-| `THREADLINE_MODEL_API_KEY` | Optional backend-only endpoint secret; never frontend/Git/prompt |
+| `THREADLINE_MODEL` | Default `gemini-3.8-flash` |
+| `THREADLINE_MODEL_PROVIDER` | Default `gemini`; optional legacy `ollama` / `compatible` adapters |
+| `THREADLINE_MODEL_URL` | Default `https://generativelanguage.googleapis.com/v1beta` |
+| `THREADLINE_MODEL_API_KEY` | Required for Gemini; backend request header only, never frontend/Git/prompt |
 | `THREADLINE_MODEL_REGION` | Descriptive operator metadata, not technical proof of processing location |
-| `THREADLINE_SUPPORT_TEMPERATURE` | Phone support default `0.2`, clamped 0–0.7; changes sampling, not source authority |
-| `THREADLINE_SUPPORT_TOP_P` | Phone support default `0.8`, clamped 0.1–1 |
+| `THREADLINE_SEMANTIC_RAG` | Default `true`; `false` selects lexical-only retrieval |
+| `THREADLINE_EMBEDDING_MODEL` | Default `gemini-embedding-001`, 768 dimensions, normalized |
+| `THREADLINE_SUPPORT_TEMPERATURE` / `TOP_P` | Optional older adapters only; omitted from Gemini 3.8 requests |
 | `THREADLINE_DB` | Optional local SQLite path; default `artifacts/local/threadline.db` |
 | `demo_now` / business timezone | Fixed rules clock / `Asia/Kolkata` |
 | `verification_mode` | `demo_match` or optional local `code` |

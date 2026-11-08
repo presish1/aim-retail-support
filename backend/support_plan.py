@@ -144,63 +144,68 @@ IMPORTANT RESPONSE CONTRACT:
         {"role": "user", "content": text},
     ]
     try:
-        async with httpx.AsyncClient(timeout=30, trust_env=False) as client:
-            if adapter.provider == "ollama":
-                response = await client.post(
-                    adapter.url + "/api/chat",
-                    json={
-                        "model": adapter.model,
-                        "messages": messages,
-                        "stream": False,
-                        "think": False,
-                        "format": schema,
-                        "keep_alive": "30m",
-                        "options": {
-                            "temperature": adapter.support_temperature,
-                            "top_p": adapter.support_top_p,
-                            "repeat_penalty": 1.05,
-                            "num_predict": 380,
-                            "num_ctx": 6144,
-                        },
-                    },
-                )
-                response.raise_for_status()
-                result = response.json()
-                content = result["message"]["content"]
-                usage = {
-                    "input_tokens": result.get("prompt_eval_count", 0),
-                    "output_tokens": result.get("eval_count", 0),
-                }
-            else:
-                response = await client.post(
-                    adapter.url + "/chat/completions",
-                    headers=adapter.headers(),
-                    json={
-                        "model": adapter.model,
-                        "messages": messages,
-                        "temperature": adapter.support_temperature,
-                        "top_p": adapter.support_top_p,
-                        "max_tokens": 380,
-                        "response_format": {
-                            "type": "json_schema",
-                            "json_schema": {
-                                "name": "support_plan",
-                                "strict": True,
-                                "schema": schema,
+        if adapter.provider == "gemini":
+            from .gemini import generate_json
+
+            content, usage = await generate_json(adapter, messages, schema)
+        else:
+            async with httpx.AsyncClient(timeout=30, trust_env=False) as client:
+                if adapter.provider == "ollama":
+                    response = await client.post(
+                        adapter.url + "/api/chat",
+                        json={
+                            "model": adapter.model,
+                            "messages": messages,
+                            "stream": False,
+                            "think": False,
+                            "format": schema,
+                            "keep_alive": "30m",
+                            "options": {
+                                "temperature": adapter.support_temperature,
+                                "top_p": adapter.support_top_p,
+                                "repeat_penalty": 1.05,
+                                "num_predict": 380,
+                                "num_ctx": 6144,
                             },
                         },
-                        "chat_template_kwargs": {"enable_thinking": False},
-                    },
-                )
-                response.raise_for_status()
-                result = response.json()
-                content = result["choices"][0]["message"]["content"]
-                usage = {
-                    "input_tokens": result.get("usage", {}).get("prompt_tokens", 0),
-                    "output_tokens": result.get("usage", {}).get(
-                        "completion_tokens", 0
-                    ),
-                }
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                    content = result["message"]["content"]
+                    usage = {
+                        "input_tokens": result.get("prompt_eval_count", 0),
+                        "output_tokens": result.get("eval_count", 0),
+                    }
+                else:
+                    response = await client.post(
+                        adapter.url + "/chat/completions",
+                        headers=adapter.headers(),
+                        json={
+                            "model": adapter.model,
+                            "messages": messages,
+                            "temperature": adapter.support_temperature,
+                            "top_p": adapter.support_top_p,
+                            "max_tokens": 380,
+                            "response_format": {
+                                "type": "json_schema",
+                                "json_schema": {
+                                    "name": "support_plan",
+                                    "strict": True,
+                                    "schema": schema,
+                                },
+                            },
+                            "chat_template_kwargs": {"enable_thinking": False},
+                        },
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                    content = result["choices"][0]["message"]["content"]
+                    usage = {
+                        "input_tokens": result.get("usage", {}).get("prompt_tokens", 0),
+                        "output_tokens": result.get("usage", {}).get(
+                            "completion_tokens", 0
+                        ),
+                    }
         turn = ModelTurn.model_validate_json(content)
         plan = SupportPlan(
             **turn.model_dump(),

@@ -384,6 +384,24 @@ def test_unrequested_model_fact_is_not_added_to_focused_answer(support):
     assert "November" not in record["messages"][-1]["text"]
 
 
+def test_general_order_location_question_always_includes_source_status(support):
+    _, ch = support
+    record = account(support)
+
+    class Writer(Offline):
+        async def plan_support(self, *args):
+            return SupportPlan(
+                intent="order_status",
+                facets=["eta", "tracking"],
+                opening="Here are the latest details.",
+            ), {"input_tokens": 1, "output_tokens": 1}
+
+    ch.workflow.model = Writer()
+    record = send(ch, record, "Where is my order?", "model")
+    assert "is on its way" in record["messages"][-1]["text"]
+    assert "9 November" in record["messages"][-1]["text"]
+
+
 def test_model_cannot_choose_item_through_unmentioned_hint(support):
     _, ch = support
 
