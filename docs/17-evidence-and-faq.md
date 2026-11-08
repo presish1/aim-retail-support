@@ -1,6 +1,6 @@
 # 17 — Evidence, presentation claims and FAQ
 
-**Purpose:** let the team defend the MVP without overstating it. Code baseline `d49563f`; current local backend suite: **95 cases**. The documentation update does not add production integrations.
+**Purpose:** let the team defend the MVP without overstating it. Current local MVP **v0.6**, reviewed 8 November 2026; backend suite: **150 cases**. Contextual support/RAG is implemented; real retailer/provider integrations remain future work.
 
 ## What is verified and where?
 
@@ -10,17 +10,27 @@
 | Account/code stages, message resume/dedup and transport | [test_whatsapp.py](../backend/tests/test_whatsapp.py) | Defined synthetic channel behavior, not real WhatsApp delivery |
 | ERP CRUD, revision conflicts, notifications, returns and assignment | [test_erp.py](../backend/tests/test_erp.py) | Defined local operations boundaries and synchronization |
 | Bad source data, unsupported model reference, evidence/photo validation, explicit submission and transaction rollback | [test_grounding.py](../backend/tests/test_grounding.py) | Defined adversarial/workflow/transaction cases |
+| Focused follow-ups, compound questions, return interruptions/corrections, negation, RAG refresh/provenance, checked model wording and fallback | [test_support.py](../backend/tests/test_support.py) | Defined conversation and composition boundaries; many cases deliberately use model doubles |
+| Current authored conversations | [runner](../evaluation/run_conversations.py), [cases](../evaluation/conversation_cases.json), [recorded v0.6 run](../evaluation/results/v06-conversations.json) | 16 authored scenarios in baseline and real Qwen modes; development regression, not unseen accuracy |
 | Live browser demonstrations | [screens and flow](10-grounded-india-returns.md), [ERP screen](../design/erp-dashboard.png), [phone screen](../design/whatsapp-phone-only.png) | Recorded local UI behavior and source-backed Qwen demo; screenshots alone are not automated assertions |
 | Historical real model/rules smoke | [v0.2 result](../evaluation/results/local-qwen3-smoke.json), [runner](../evaluation/run_smoke.py) | Twelve authored scenarios per mode on a prior version; integration evidence only |
 | Planned evaluation cases | [scenario seeds](../evaluation/scenarios.csv), [evaluation plan](06-evaluation-and-handoff.md) | A starting test design, not executed benchmark results |
 
 Run `npm test` to reproduce the backend suite and `npm run build` to check the frontend build. Model smoke requires the configured real model. Tests use temporary databases; do not reset the shared demonstration workspace to run them. See [README](../README.md) for setup.
 
-**Documentation-pass verification, 7 November 2026:** the backend suite passed again (95 cases). The API table was compared with the Python route definitions and matched all 24 `/api` routes. The guide/tool catalogue was checked against the four model schemas and six read functions. All 168 local links in 23 Markdown files resolved, code fences were balanced, and Git whitespace checks passed. This is documentation/source consistency checking, not provider integration or security certification. No application code or dependency changes were made in this pass.
+**Historical documentation verification, 7 November 2026:** the then-current 95-case suite passed, the API table matched 24 `/api` routes, the legacy catalogue matched four model schemas/six read functions, and 168 links resolved in 23 Markdown files. Those counts describe the v0.5 documentation pass.
 
-## What 95 tests do not prove
+**v0.6 verification, 8 November 2026:** 150 backend cases and the TypeScript/Vite production build pass. The recorded conversation run retains actual per-turn mode, source/guidance provenance, generated opening/closing, accepted wording or fallback reason, tokens and local timing. Model mode is not synonymous with model-written final text: action confirmations intentionally use guarded renderers, and failed wording checks also use source text. Count these separately when analyzing the JSON.
 
-Many tests deliberately use deterministic baseline routing, a forced-offline model or a fake model proposal to isolate backend controls. They do not establish Qwen's accuracy on unseen customer language. The number is a count of parameterized cases, not 95 independent real customers, an uptime guarantee, security certification or statistical evidence of zero error.
+The final recorded run passed **16/16 authored scenarios in each mode**, with 49 customer turns per mode. The model run made 35 genuine inference calls and avoided inference on 14 system turns; no model-outage fallback occurred. Eight eligible replies used accepted generated wording; one generated factual wording was rejected and source-rendered. Other inference turns led to guarded intake, selection, handoff or failure responses. Median actual-model turn latency was 4,189 ms and nearest-rank p95 was 5,526 ms on the already-running local model. This single authored development run does not establish unseen accuracy, cold-start performance, capacity or a production SLA.
+
+Browser checks used actual local Qwen: a tracking-only follow-up, delivery estimate, existing-refund response, account switch, return reason “the sleeves are too tight,” combined condition/tag answer, and a tag FAQ that preserved the pending photo step. ERP Conversations displayed named reads and the new readable evidence panel. These use the existing mutable synthetic workspace, not a pristine benchmark. The broader prior UI checks remain historical evidence.
+
+Screens: [contextual return in the phone](../design/whatsapp-contextual-return.png), [readable response evidence in ERP](../design/erp-response-evidence.png).
+
+## What these tests do not prove
+
+Many tests use deterministic baseline routing, forced model failure or fake model output to isolate controls. They do not establish Qwen's accuracy on unseen language. The count is parameterized cases, not independent real customers, an uptime guarantee, security certification or statistical evidence of zero error. The authored real-Qwen conversations were used during development; passing them is regression evidence, not a fair estimate of generalization or proof of a “100x” improvement.
 
 Still unverified: a real retailer/Meta/courier/gateway/helpdesk connection; complete security/privacy assessment; peak-load and multi-worker recovery; production credential/permissions; durable offline notifications; fraud/vision assessment; full finance/tax/discount/COD logic; broad multilingual conversations; held-out language comparison; customer satisfaction, sustained resolution, staff capacity and ROI.
 
@@ -29,7 +39,9 @@ Still unverified: a real retailer/Meta/courier/gateway/helpdesk connection; comp
 | Claim | Status / accurate wording |
 | --- | --- |
 | Answers use live data | Demonstrated with current mutable synthetic SQLite records behind an API |
-| Factual invention is constrained | Backend templates/read validation prevent specified unsupported transactional facts in defined paths |
+| Factual invention is constrained | Current validated paragraphs, targeted prose checks and fallback constrain specified unsupported claims; qualitative errors remain possible |
+| The support uses RAG | Implemented local BM25 retrieval over 25 approved support passages, separate from live order reads |
+| The model was fine-tuned | Unsupported as a weights claim; prompts/context/retrieval/decoding were tuned and synthetic training pairs prepared |
 | The system is completely safe | Unsupported; describe specific controls and the remaining MVP gaps |
 | Qwen is the best model | Unsupported; it is the current local implementation choice, not a benchmark winner |
 | It is connected to WhatsApp | Browser simulation today; official channel integration is proposed |
@@ -40,9 +52,11 @@ Still unverified: a real retailer/Meta/courier/gateway/helpdesk connection; comp
 
 ## FAQ for the team
 
-**Why use AI at all?** To interpret varied wording/follow-ups. APIs supply facts, rules calculate, a state machine collects answers and staff decides exceptions. Compare AI against rules on an unseen set; use the simpler option if it performs equally well.
+**Why use AI at all?** To understand varied wording/follow-ups and phrase contextual explanations. RAG supplies approved reference content; APIs supply current facts; rules calculate; the state machine collects reported answers; staff decides exceptions. Compare on an unseen set before claiming model superiority.
 
-**Is this RAG?** There is no vector/document retrieval pipeline. It is tool-routed transactional support plus structured policy rules. Optional future policy retrieval would complement, not replace, live order reads.
+**Is this RAG?** Yes. The phone retrieves approved passages using a local BM25 index with topic filtering/boosts, then supplies them to the model. There is no vector database or embedding API. Current order/payment facts still require authorized live reads. See [document 18](18-conversational-rag.md).
+
+**Did we fine-tune the model?** No weights or LoRA adapter have been trained. We tuned instructions, context, retrieval, schema and decoding (default temperature 0.2/top-p 0.8). Sixteen synthetic training pairs and a real training/evaluation plan are in [training](../training/README.md). Temperature controls sampling variability, not understanding by itself.
 
 **Can the model read the whole database?** No generic database/SQL tool is exposed. The workflow executes named reads with server-bound identity. That does not make the demo's identity shortcuts production-safe.
 

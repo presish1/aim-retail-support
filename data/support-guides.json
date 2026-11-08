@@ -1,0 +1,316 @@
+{
+  "version": "threadline-support-v1",
+  "scope": "Approved synthetic-store support guidance. Operational facts must be read from the current system.",
+  "documents": [
+    {
+      "id": "order_overview",
+      "title": "Current order summary and follow-ups",
+      "topics": ["order_status"],
+      "questions": ["where is my order", "check my order status", "latest order update check again"],
+      "answer": "Here are the latest details for your purchase. If something doesn't look right, tell me what's happened and I'll help with the next step."
+    },
+    {
+      "id": "welcome",
+      "title": "Welcome and ways to help",
+      "topics": [
+        "greeting",
+        "help"
+      ],
+      "questions": [
+        "hello hi hey good morning",
+        "what can you help with"
+      ],
+      "answer": "Hi! Welcome to Threadline. Tell me what's happened—I can help with an order, a return, or getting the store team involved."
+    },
+    {
+      "id": "identity_reason",
+      "title": "Why checkout contact is needed",
+      "topics": [
+        "identity"
+      ],
+      "questions": [
+        "why email phone personal details verification safe",
+        "why do you need my email"
+      ],
+      "answer": "I use the checkout email or mobile number to find the right customer account. An order number alone doesn't establish who owns it. You can ask general policy questions without sharing a contact. Please don't send passwords, card details or bank OTPs."
+    },
+    {
+      "id": "tracking_help",
+      "title": "Tracking reference and shipment details",
+      "topics": [
+        "tracking",
+        "order_status"
+      ],
+      "questions": [
+        "tracking number awb courier link parcel shipment",
+        "how can I track"
+      ],
+      "answer": "I can share the tracking reference and carrier saved against your purchase. If a live tracking link isn't available here, I can ask the store to investigate rather than invent a link."
+    },
+    {
+      "id": "eta_explained",
+      "title": "Delivery estimates and urgent requests",
+      "topics": [
+        "eta",
+        "order_status",
+        "urgent"
+      ],
+      "questions": [
+        "when arrive tomorrow guaranteed by wedding birthday weekend",
+        "is delivery date guaranteed"
+      ],
+      "answer": "I can check the delivery estimate for this parcel. If the timing causes a problem, I can ask the store to investigate."
+    },
+    {
+      "id": "late_delivery",
+      "title": "A delivery estimate has passed",
+      "topics": [
+        "delivery_delay"
+      ],
+      "questions": [
+        "late delayed overdue stuck no movement still not here",
+        "why has my parcel not arrived"
+      ],
+      "answer": "If the saved estimate has passed without a newer update, the useful next step is a delivery investigation. I can attach the current order details and your concern for the store; I won't make up a new arrival date or a reason for the delay."
+    },
+    {
+      "id": "preparing_order",
+      "title": "An order is still being prepared",
+      "topics": [
+        "processing"
+      ],
+      "questions": [
+        "unfulfilled processing not shipped dispatch packed",
+        "why has not dispatched yet"
+      ],
+      "answer": "An unfulfilled order is still recorded as being prepared. That doesn't confirm it has been handed to a courier. If you need to change or cancel it, the store must check whether fulfilment can still be stopped."
+    },
+    {
+      "id": "delivery_dispute",
+      "title": "Marked delivered but not received",
+      "topics": [
+        "delivery_dispute"
+      ],
+      "questions": [
+        "delivered but not received missing stolen never arrived",
+        "says delivered haven't got it"
+      ],
+      "answer": "If the carrier or order system says delivered but you haven't received it, I'll treat that as a delivery dispute. Please check whether reception or someone at the address accepted it. I can send your report to the store to check delivery evidence; a status alone doesn't prove you received the parcel."
+    },
+    {
+      "id": "split_delivery",
+      "title": "Part of an order arrived",
+      "topics": [
+        "split_delivery",
+        "items"
+      ],
+      "questions": [
+        "one item missing split partial only shirt arrived rest",
+        "where is other item"
+      ],
+      "answer": "Items can have different delivery states. I'll check each item rather than assume the whole order arrived. A return window is based on the selected item's delivery date."
+    },
+    {
+      "id": "return_policy",
+      "title": "Ordinary return conditions",
+      "topics": [
+        "return_policy",
+        "return_eligibility"
+      ],
+      "policy_bound": true,
+      "questions": [
+        "return policy window eligible how many days can return",
+        "what is your return policy"
+      ],
+      "answer": "I can explain how returns work and check the deadline for your purchase. Tell me which item you'd like to send back, and I'll help with the next step."
+    },
+    {
+      "id": "try_on",
+      "title": "Trying on versus wearing or washing",
+      "topics": [
+        "return_condition"
+      ],
+      "questions": [
+        "only tried on never worn outside try it fit tight",
+        "does trying on count as worn"
+      ],
+      "answer": "Please report it as 'unworn / only tried on' if you briefly tried it for fit and haven't worn it out or washed it. Be honest about any use or marks; the store still inspects the item before a final decision."
+    },
+    {
+      "id": "garment_tags",
+      "title": "Garment tags versus delivery packaging",
+      "topics": [
+        "return_tags"
+      ],
+      "questions": [
+        "what tags mean cut opened tag plastic bag packaging torn box",
+        "opened packet tags intact"
+      ],
+      "answer": "I mean the original tags attached to the clothing, not the outer courier bag. Opening the delivery packaging is different from removing a garment tag. If a tag is removed or missing, tell me and I'll flag it for staff review."
+    },
+    {
+      "id": "damaged_item",
+      "title": "Damaged or wrong item",
+      "topics": [
+        "damage",
+        "wrong_item",
+        "return_reason"
+      ],
+      "questions": [
+        "damaged ripped torn stained defective faulty wrong product",
+        "received different item broken zip"
+      ],
+      "answer": "I'm sorry the item isn't right. Keep the item and label, and add a clear photo of the issue and product tag when preparing the return. The store needs to review damage or a wrong-item report; I won't reject it solely as a change-of-mind return."
+    },
+    {
+      "id": "return_photos",
+      "title": "Helpful return photos",
+      "topics": [
+        "return_photos"
+      ],
+      "questions": [
+        "how upload photo what image camera no photo cannot picture",
+        "why need photos skip photo"
+      ],
+      "answer": "Use + or the camera button to attach a clear item photo and a close-up of the tag. For damage, include the affected area. You can continue without a photo for staff review. I can confirm receipt of an image, but I don't automatically judge its condition."
+    },
+    {
+      "id": "return_steps",
+      "title": "What happens after submitting a return",
+      "topics": [
+        "return_process",
+        "return_status"
+      ],
+      "questions": [
+        "how return works next steps process send parcel return pickup",
+        "what happens after return request"
+      ],
+      "answer": "First the store reviews the request and evidence. If approved, staff confirms a pickup booking. The item is then received and inspected before a refund is recorded. Submitting a request doesn't itself book a pickup or approve money back."
+    },
+    {
+      "id": "refund_timing",
+      "title": "Refund processing and bank-credit uncertainty",
+      "topics": [
+        "refund_timing",
+        "refund_status"
+      ],
+      "questions": [
+        "how long refund take when money back bank upi days timeline",
+        "refund approved where is money"
+      ],
+      "answer": "A refund follows the store's review and inspection process. I can check the return's progress and any recorded refund reference. I don't have a confirmed bank-credit timeline, so I can't promise when the money will reach your account."
+    },
+    {
+      "id": "return_cost",
+      "title": "Return pickup charges are not configured",
+      "topics": [
+        "return_cost"
+      ],
+      "questions": [
+        "return free charge fee cost shipping deduction pickup money",
+        "who pays return shipping"
+      ],
+      "answer": "I don't have confirmed pickup charges or deduction rules to share. I can ask the store to confirm any charge before you agree to it."
+    },
+    {
+      "id": "pickup_preference",
+      "title": "Pickup preference and serviceability",
+      "topics": [
+        "pickup",
+        "return_address"
+      ],
+      "questions": [
+        "pickup address pin pincode slot tomorrow weekend booking serviceable",
+        "can you pick up here"
+      ],
+      "answer": "The address and time window in a return request are your preferences. The store must check serviceability and confirm a carrier booking; a valid PIN alone doesn't confirm pickup. Don't send bank details with the pickup address."
+    },
+    {
+      "id": "change_address",
+      "title": "Changing a delivery address",
+      "topics": [
+        "address_change"
+      ],
+      "questions": [
+        "change address wrong address house shipping edit location",
+        "deliver to different place"
+      ],
+      "answer": "I can pass an address-change request to the store, but can't silently change a shipment. The store must check dispatch status and carrier restrictions first. Don't send the new full address until we've identified the right order and the team asks for it."
+    },
+    {
+      "id": "cancel_order",
+      "title": "Requesting a cancellation",
+      "topics": [
+        "cancel"
+      ],
+      "questions": [
+        "cancel order stop dispatch don't want purchase anymore",
+        "cancelled refund automatic"
+      ],
+      "answer": "The store needs to check whether the order can still be stopped. I can save a cancellation request with the current fulfilment details, but a support request isn't a confirmed cancellation or refund."
+    },
+    {
+      "id": "exchange_size",
+      "title": "Size exchange and replacement stock",
+      "topics": [
+        "exchange",
+        "size_guide"
+      ],
+      "questions": [
+        "exchange swap size M L larger smaller measurements size chart",
+        "replace with different size too tight"
+      ],
+      "answer": "I can help prepare the return or ask the store about an exchange. Live replacement stock and a confirmed exchange booking aren't available here, so I can't promise a size is reserved. Tell me which item and which size you'd prefer."
+    },
+    {
+      "id": "payment_help",
+      "title": "Payment state and payment disputes",
+      "topics": [
+        "payment"
+      ],
+      "questions": [
+        "paid money deducted payment pending receipt total price charged twice",
+        "paid but no order"
+      ],
+      "answer": "I can check the payment state saved against your order. If money was deducted but the order is missing or still pending, the store needs to reconcile the original payment. Please don't send card numbers, bank OTPs or credentials; a screenshot alone doesn't confirm settlement."
+    },
+    {
+      "id": "catalog_limits",
+      "title": "Product information and unavailable inventory",
+      "topics": [
+        "catalog",
+        "stock",
+        "size_guide"
+      ],
+      "questions": [
+        "products clothes price hoodie shirt stock available size material fabric wash care",
+        "what do you sell"
+      ],
+      "answer": "I can show the catalogue's saved product names, variants and prices. Live stock, garment measurements, fabric composition and care instructions aren't configured for every item, so I'll ask the store rather than guess."
+    },
+    {
+      "id": "support_team",
+      "title": "A person and support expectations",
+      "topics": [
+        "human"
+      ],
+      "questions": [
+        "agent human person support contact help real staff complaint manager",
+        "can someone help"
+      ],
+      "answer": "I can save your question for the store team with the details already shared. A saved request is queued for review; it doesn't mean a person has joined the chat or guarantee a response time."
+    },
+    {
+      "id": "source_unavailable",
+      "title": "Unavailable or delayed source",
+      "topics": [
+        "source_failure"
+      ],
+      "questions": [
+        "cannot check unavailable server down latest status unknown",
+        "why can't you get order"
+      ],
+      "answer": "I can't verify the latest details while the source is unavailable or delayed. I won't reuse an earlier message as the current status. I can save your question for the store to check."
+    }
+  ]
+}

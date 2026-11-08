@@ -2,7 +2,11 @@
 
 **Presentation point:** AI understands the request; business tools supply evidence; rules and people control actions. A “tool” is not automatically an unrestricted API connection.
 
-## A. Actual model-callable tools
+## A. Current phone orchestration and legacy model tools
+
+In v0.6 the phone uses a typed support plan from [support_plan.py](../backend/support_plan.py). [support.py](../backend/support.py) retrieves guidance and dispatches authorized reads or guarded workflows. The model does not emit a free-running API sequence. Its fields are intent, facets, emotion, literal item hint, guide IDs, conversational opening and closing. The server inserts required factual paragraphs between them. Reported return answers and consent are parsed separately. [Document 18](18-conversational-rag.md) specifies the current path.
+
+The following four model-callable schemas remain in the **legacy HTTP chat path**, not the new phone's generation contract:
 
 Defined in [model.py](../backend/model.py), executed by [service.py](../backend/service.py).
 
@@ -26,7 +30,7 @@ There is no model-callable refund, pickup booking, arbitrary HTTP/SQL, image ins
 | `LiveReads.get_policy` | Bound return rules | Exact version and supported structured policy shape |
 | `LiveReads.get_return` | Existing RMA/refund status | Owned order; return status, quantity/value and customer-safe fields |
 
-Source: [reads.py](../backend/reads.py). Audit names include `list_my_orders` and `get_return_policy`; the model does not thereby gain those internal Python methods as separate free-running tools. Some reads happen directly through channel/state-machine paths, without an LLM proposal.
+Source: [reads.py](../backend/reads.py). Audit names include `list_my_orders` and `get_return_policy`; the model does not thereby gain those internal Python methods as separate free-running tools. Current phone orchestration invokes these methods through the application controller. Guide search in [retrieval.py](../backend/retrieval.py) supplies approved explanatory text; it never establishes live order/payment state.
 
 ## C. Deterministic commands currently implemented
 

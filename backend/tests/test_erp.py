@@ -77,7 +77,8 @@ def test_new_customer_and_order_are_immediately_found_in_chat(erp_system):
     record = send(channel, channel.start(), "Where is my order?")
     record = send(channel, record, "robin@example.com")
     assert record["selected_order"] == order["order_id"]
-    assert "₹3,998.00" in record["messages"][-1]["text"]
+    assert record["latest_trace"]["evidence"]["order_total"] == 3998
+    assert record["messages"][-1]["product"]["quantity"] == 2
     assert record["messages"][-1]["product"]["name"] == "Weekday Hoodie"
     assert Store(store.path).order(order["order_id"])["items"][0]["quantity"] == 2
 
@@ -158,7 +159,8 @@ def test_live_notification_and_next_reply_match_saved_order(erp_system):
     assert store.channel(record["id"])["latest_trace"]["evidence"]["revision"] == 2
     assert "latest_trace" not in update
     record = send(channel, record, "Can you check again?")
-    assert "is delivered" in record["messages"][-1]["text"]
+    assert "recorded as delivered" in record["messages"][-1]["text"]
+    assert record["latest_trace"]["evidence"]["status"] == "delivered"
 
 
 def test_automatic_update_does_not_disclose_to_other_customer(erp_system):

@@ -2,11 +2,11 @@
 
 **Audience:** MBA AI in Management team. **Purpose:** help the team build its own presentation now. This is a content and speaker-note pack, not a claim that the production integrations are finished.
 
-Use the [system guide](../SYSTEM_GUIDE.md) for the complete explanation and [documentation map](README.md) for deeper questions. All prototype records are fictional. The code baseline described is local v0.5 (`d49563f`).
+Use the [system guide](../SYSTEM_GUIDE.md) for the complete explanation and [documentation map](README.md) for deeper questions. All prototype records are fictional. Current scope is local v0.6; [document 18](18-conversational-rag.md) explains RAG and the model's conversational role.
 
 ## The one-minute story
 
-> Scenario A receives 400 customer queries per day, mainly about order status and returns. We recommend a supervised AI support layer connected to the retailer's operational systems. Our MVP demonstrates the pattern with a live local database: a customer messages the store, identifies an account, gets current order details, or completes a structured return request. Qwen interprets supported requests, while backend functions read and validate the facts. Staff keeps approval and refund responsibility. Changing fulfilment in the dashboard changes the next answer. When the source is unavailable, the service says it cannot verify. Real WhatsApp, courier and payment integrations are the next stage, not existing connections.
+> Scenario A receives 400 customer queries per day, mainly about order status and returns. We recommend supervised AI support connected to the retailer's operational systems. Our MVP demonstrates this with a live local database: customers ask naturally, get focused order answers or prepare a return without repeating themselves. Qwen understands the concern and phrases a response using approved retrieved guidance. Backend functions supply current factual paragraphs and control actions; staff keeps approval and refund responsibility. Changing fulfilment changes the next answer. Source failure blocks guesses. Real WhatsApp, courier and payment adapters are the next stage.
 
 ## Suggested ten-part presentation
 
@@ -17,7 +17,7 @@ These are content suggestions, not an instructor-supplied slide count. Each row 
 | 1. The operating problem | 400 queries/day; status and returns dominate; answers must use live records | These are assignment facts. Exact query mix, current response time and payroll savings are not measured. |
 | 2. Our recommendation | Supervised post-purchase service over existing business systems | Automate repetitive reading and intake; staff owns exceptions and commercial decisions. |
 | 3. The two experiences | Customer WhatsApp-style phone + staff operations workspace | Show [phone](../design/whatsapp-phone-only.png) and [ERP](../design/erp-dashboard.png). Current channel is a browser simulation. |
-| 4. How an answer is produced | Identify → route → authorize/read → validate → render → record evidence | Use the architecture diagram below. The LLM proposes an action; it does not author order facts. |
+| 4. How an answer is produced | Context → retrieve guidance → understand/write → authorize/read → compile facts → record evidence | General help needs no account. The LLM writes conversational language; the application supplies current order facts. |
 | 5. Why factual invention is constrained | Facts from validated reads; policy/math in code; no refund tool | Show a current order reply and its evidence. Avoid “zero hallucinations guaranteed.” |
 | 6. The live proof | Change fulfilment; observe a new source-backed answer; show outage behavior | This demonstrates freshness/failure handling for synthetic records, not a real courier integration. |
 | 7. A realistic return | Reason, condition, tags, photos, address, review, explicit submit; staff completes the lifecycle | Show [photo intake](../design/whatsapp-return-photo.png) and [staff evidence](../design/erp-return-evidence.png). No photo AI, pickup booking or money transfer occurs. |
@@ -30,16 +30,18 @@ These are content suggestions, not an instructor-supplied slide count. Each row 
 ```mermaid
 flowchart LR
     C[Customer message] --> W[Workflow and account binding]
-    W <--> AI[AI understands request]
+    W --> KB[Approved support-guide retrieval]
+    KB --> AI[AI understands and phrases]
+    AI --> W
     W --> T[Authorized reads and rules]
     T <--> D[(Live order / return records)]
-    T --> R[Backend factual reply]
+    T --> R[Verified factual paragraphs and checked wording]
     R --> C
     S[Staff workspace] --> D
     W --> H[Human support and evidence]
 ```
 
-**How to explain it:** “The model chooses a supported information task. The server verifies the customer and purchase, reads the current data, applies rules, and inserts verified values into a response. Staff writes to the operational record. A future adapter will connect these same boundaries to the retailer's actual systems.”
+**How to explain it:** “The model understands the customer and writes helpful language from approved guidance. The server checks access, reads current business data and inserts the requested factual paragraphs. It validates wording or uses the source renderer. Staff writes to the operational record. Future adapters connect these same boundaries to the retailer's actual systems.”
 
 ## The live demo, with narration
 
@@ -64,18 +66,19 @@ The first six steps are the core live-data proof. Use the return sequence as a s
 | Avoid saying | Say instead |
 | --- | --- |
 | “It is totally safe.” | “The MVP demonstrates specific safeguards on synthetic data; production identity, security and operations remain to be built and assessed.” |
-| “There are no hallucinations.” | “Transactional text is backend-rendered from validated reads. This constrains invented facts; source and intent errors remain possible.” |
+| “There are no hallucinations.” | “Current values come from validated factual blocks and generated language is checked. This constrains specified errors; source, intent and qualitative wording errors remain possible.” |
 | “It is connected to WhatsApp.” | “It currently simulates WhatsApp in a browser. The documented next step is an official Business Platform adapter.” |
 | “The courier API is live.” | “The MVP reads a mutable local source. Courier tracking/serviceability are proposed adapters.” |
 | “The customer has been authenticated.” | “The demo matched a fictional account. Production must verify access before disclosure.” |
 | “The refund has reached the bank.” | “A synthetic refund was recorded after the staff gate. Gateway state and bank-credit confirmation are different.” |
-| “95 tests prove AI accuracy.” | “95 backend cases verify defined boundaries; many use deterministic/model doubles. They are not a held-out Qwen language benchmark.” |
+| “All our tests prove AI accuracy.” | “Backend cases and authored real-Qwen conversations verify defined development scenarios. They are not an unseen language benchmark or production reliability estimate.” |
+| “We fine-tuned Qwen.” | “We tuned prompts, context, RAG, structured output and sampling. We prepared synthetic examples; the model weights remain unchanged.” |
 | “We save X% or eliminate Y jobs.” | “We hypothesize less repetitive work; measure sustained resolution, time, escalation capacity and total cost first.” |
 | “We replace the existing ERP.” | “The proposed service reads and coordinates existing systems. The dashboard stands in for them during this MVP.” |
 
 ## Why use AI if rules provide the facts?
 
-AI's potential value is understanding varied customer wording and follow-ups. APIs supply facts; rules calculate eligibility; a state machine gathers return answers; people decide exceptions. The repository includes a rules baseline using the same backend. If menus/rules handle the workload equally well at lower complexity, choose them. Model selection is an empirical management decision, not the product's success metric.
+AI's potential value is understanding varied wording, keeping the concern in context and phrasing helpful guidance. RAG retrieves approved explanations; APIs supply current facts; rules calculate eligibility; the state machine gathers reported return answers; people decide exceptions. The repository includes a rules baseline using the same backend. Compare on unseen customer tasks before claiming an advantage. Phone sampling defaults are temperature 0.2 and top-p 0.8; these limit variation, not establish truth or train new weights.
 
 ## Questions an instructor may ask
 

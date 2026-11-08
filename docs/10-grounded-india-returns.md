@@ -1,5 +1,7 @@
 # v0.5 — India store, verified reads, and return service design
 
+**Retained return/read design.** Version 0.6 adds contextual conversation, natural reported answers and approved-guide RAG. Its model/response architecture is described in [document 18](18-conversational-rag.md), which supersedes the older response-generation diagram below. Existing read, consent, photo and staff gates remain.
+
 The instructor's constraint remains the same: order status and return answers must come from the current order system. India, INR, the iPhone-style WhatsApp channel, and guided return intake are the user's subsequent product decisions. The earlier draft's US setting is superseded. The 30-day policy, pickup windows, catalogue prices, and customer records are illustrative assumptions for this prototype.
 
 ## Product decisions

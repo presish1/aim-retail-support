@@ -1,7 +1,7 @@
 # Threadline
 ### Order & returns support, grounded in the order system
 
-**AI in Management · MBA · Scenario A · Working prototype v0.5 · 7 November 2026**
+**AI in Management · MBA · Scenario A · Working prototype v0.6 · 8 November 2026**
 
 > Recommend a small, supervised AI service that answers routine post-purchase questions using current order records, checks return eligibility with explicit business rules, and hands exceptions to a person with the context attached.
 
@@ -33,7 +33,15 @@ Saving a selected order's status, carrier estimate, or tracking details sends a 
 
 Catalogue prices are illustrative INR prices; policy and delivery dates use IST. Customer replies include product photographs, order details, payment status, and useful reply buttons. Return intake collects the item, reason, condition, tags, optional photos, quantity, pickup address and preferred window, then asks for explicit submission. The ERP continues through approval, carrier booking, receipt, inspection and recorded refund. No carrier booking or payment is executed.
 
-The [v0.5 design and read contracts](docs/10-grounded-india-returns.md) explain the factual read boundary, failure cases, return journey and demo script. Photos and credits are bundled under [public/products](public/products/credits.json).
+The [return design and read contracts](docs/10-grounded-india-returns.md) explain the factual boundary and return journey. The [v0.6 conversational/RAG reference](docs/18-conversational-rag.md) explains model-written replies, approved guidance retrieval, natural return answers and safeguards. Photos and credits are bundled under [public/products](public/products/credits.json).
+
+## Conversational support and RAG
+
+The phone uses Qwen3-8B to understand follow-ups and draft useful replies from a versioned, 25-passage support guide. General policy questions need no email. Ask for only a tracking number, ask several order details together, describe a fit issue naturally, or interrupt a return with a question: the controller keeps the account, purchase and pending step in context.
+
+Current order facts come from fresh authorized reads and locked factual paragraphs. Generated wording is checked before use; rejected wording falls back to the approved/source renderer. Return submission and staff decisions remain guarded workflows. ERP Conversations shows the intent, guidance, reads and actual model/fallback behavior.
+
+Phone generation defaults to **temperature 0.2, top-p 0.8**, one model call per free-text turn. This is prompt/retrieval/decoding tuning; **the model weights have not been fine-tuned**. [Synthetic training examples and the training plan](training/README.md) are included for a future measured experiment.
 
 ## Run the prototype
 
@@ -59,6 +67,7 @@ Optional: copy `.env.example` to `.env` to configure another local model or comp
 npm test
 npm run build
 .venv/bin/python evaluation/run_smoke.py --output artifacts/local/model-smoke.json
+.venv/bin/python evaluation/run_conversations.py --modes baseline model --output artifacts/local/conversations.json
 ```
 
 **First demo:** open customer chat → ask about an order → use `aarav@example.com` → select #4812 → find #4812 in ERP Orders → set Delivered in its inline selector → see the order update arrive in chat → ask “Can you check again?” → inspect the conversation and response evidence in ERP Conversations.
@@ -79,8 +88,8 @@ Our central design question:
 
 1. A customer asks, “Where is my order?” or “Can I return the shirt?”
 2. The service verifies access to the purchase and reads its current record.
-3. A small language model interprets the request and selects an allowed tool. Backend rules determine eligibility; structured facts supply dates and status.
-4. The customer receives a factual reply with product and order details and a useful next action.
+3. A small language model interprets the concern and phrases a reply using approved retrieved guidance. Backend rules determine eligibility; fresh structured reads supply dates and status.
+4. The customer receives the requested details and a useful next step. The compiler checks generated wording before inserting verified factual paragraphs.
 5. Missing data, exceptions, and requests for a person create a handoff with verified context.
 
 **The signature demonstration:** ask about an order, change its status in a separate demo order console, then ask again. The second answer must reflect the new database value. Turn the order API off: the service must admit it cannot check, rather than reuse the earlier answer as current.
@@ -91,16 +100,18 @@ Our central design question:
 flowchart LR
     C[Customer channel] --> S[Session & identity verification]
     S --> W[Bounded support workflow]
-    W <--> M[Replaceable open-weight model]
+    W --> K[Approved support-guide retrieval]
+    K --> M[Replaceable open-weight model]
+    M --> W
     W --> T[Authorized tool gateway]
     T <--> O[(Live order system)]
     T <--> P[Versioned return policy & rules]
     T --> H[Human support queue]
-    T --> F[Validated facts & approved response templates]
+    T --> F[Validated facts and checked wording / fallback]
     F --> C
 ```
 
-The model proposes an intent and tool arguments. The backend owns authorization, calculations, permissions, and response facts. A rules-and-template baseline uses the same backend so the team can measure the model's added value.
+The phone model produces a typed intent, requested details, guidance IDs and a reply draft. The backend owns authorization, calculations, permissions, factual values and writes. A rules baseline uses the same business boundary. The older four-tool HTTP route remains for compatibility. [Read the complete current design](docs/18-conversational-rag.md).
 
 ## Read the design package
 
@@ -117,6 +128,7 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 | [MVP-to-pilot plan](docs/15-production-plan-and-operations.md) | Integration gates, operational owners, evaluation and economics |
 | [API and data reference](docs/16-api-and-data-reference.md) | Implemented endpoints, WebSocket protocol, records and configuration |
 | [Evidence and FAQ](docs/17-evidence-and-faq.md) | What the tests demonstrate, untested areas and presentation answers |
+| [Conversational support and RAG](docs/18-conversational-rag.md) | Current model role, retrieval, factual blocks, decoding and fine-tuning boundaries |
 | [Documentation map and history](docs/README.md) | Reading paths and earlier definition, model, business-case and design notes |
 | [Sources](docs/sources.md) | Primary references checked for the model and deployment discussion |
 | [Demo data](data/README.md) | Eight synthetic customers, fourteen sample orders, an illustrative policy, and a fixed demo clock |
@@ -133,8 +145,8 @@ The model proposes an intent and tool arguments. The backend owns authorization,
 
 ## Repository status
 
-**Completed:** operations ERP, phone-only customer channel, Qwen3-8B tool selection, persistent customer/order/return records, live updates, return rules, access boundaries, failure controls, deduplicated support requests, conversation evidence, and a rules baseline.
+**Completed:** operations ERP, phone-only customer channel, contextual Qwen3-8B support, local approved-guide RAG, validated generated wording, persistent records, live updates, natural return intake, failure controls, deduplicated support requests, readable response evidence and a rules baseline.
 
-**Verified locally:** 95 backend tests, including source validation, unsupported model references, photo uploads, return consent and refund gates. Browser checks cover unknown-account recovery, creating a customer and order, real Qwen lookup of that purchase, saved order updates delivered to chat, return processing, support assignment, and layouts at 320–1500px. The [recorded v0.2 smoke run](evaluation/results/local-qwen3-smoke.json) is retained as historical integration evidence. These checks are not a held-out benchmark or proof of production reliability.
+**Verified locally:** 150 backend cases and the production build pass. The [evidence register](docs/17-evidence-and-faq.md) records authored real-Qwen conversations, browser checks and their limits. These are development regressions, not an unseen benchmark or production reliability estimate. The [v0.2 smoke run](evaluation/results/local-qwen3-smoke.json) remains historical integration evidence.
 
 **Next:** a separate held-out paraphrase/multi-turn evaluation, measured model comparison and cost analysis, then presentation evidence. An actual retailer pilot also needs its real systems, verification, and deployment review.

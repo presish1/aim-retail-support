@@ -74,7 +74,7 @@ def test_verification_finds_owned_active_orders_without_number(channel_system):
     assert "4901" not in record["messages"][-1]["text"]
     record = send(channel_system, record, "1")
     assert record["selected_order"] == "4812"
-    assert "₹1,999.00" in record["messages"][-1]["text"]
+    assert record["messages"][-1]["product"]["amount"] == 1999
     assert record["messages"][-1]["product"]["name"] == "Weekday Hoodie"
     assert record["latest_trace"]["evidence"]["order_id"] == "4812"
 

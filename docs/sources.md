@@ -4,11 +4,12 @@ Checked **7 November 2026**. Availability, pricing, endpoint behavior, and provi
 
 ## Current MVP evidence and integration references
 
-The current documentation was reviewed against code baseline `d49563f`. Implementation claims come from repository code and defined local tests, not from external marketing material. See [the evidence register](17-evidence-and-faq.md) and [presentation claim table](PRESENTATION_BRIEF.md).
+External references below were checked 7 November; current v0.6 implementation references were updated 8 November 2026. Implementation claims come from repository code and defined local tests, not external marketing material. See [the evidence register](17-evidence-and-faq.md) and [presentation claim table](PRESENTATION_BRIEF.md).
 
 | Primary reference | What was checked / used | Limit |
 | --- | --- | --- |
-| [Model adapter](../backend/model.py) and [workflow](../backend/service.py) | Actual four tool schemas, bounded inference, fallback, rendering and evidence | Source inspection does not prove broad language performance |
+| [Support controller](../backend/support.py), [typed model turn](../backend/support_plan.py), [retrieval](../backend/retrieval.py), [compiler](../backend/composition.py) | Current phone RAG, context, generated wording and factual boundary | No universal semantic correctness or weight fine-tuning claim |
+| [Model adapter](../backend/model.py) and [workflow](../backend/service.py) | Legacy four-tool schemas, business rules, fallback and persistence | Source inspection does not prove broad language performance |
 | [Read boundary](../backend/reads.py), [return intake](../backend/returns_flow.py), [store](../backend/store.py), [ERP](../backend/erp.py) | Ownership, policy/value checks, explicit workflow and local transactions | Not a real retailer/courier/payment connection or a complete security audit |
 | [Channel](../backend/whatsapp.py), [API](../backend/app.py), [media](../backend/media.py), [workspace client](../src/useWorkspace.ts) | Local protocol, identity shortcuts, media limits, notifications and reconnect | Not official WhatsApp transport or durable distributed delivery |
 | [Meta official Postman workspace](https://www.postman.com/meta/whatsapp-business-platform/overview) | Official WhatsApp Business Platform API reference entry point | Specific account setup and API version still need implementation-time verification |

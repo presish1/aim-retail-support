@@ -2394,3 +2394,72 @@
   font-size: 10px;
   color: #697486;
 }
+.erp-support-evidence {
+  margin-top: 24px;
+  border: 1px solid #e1e6ed;
+  border-radius: 7px;
+  padding: 15px;
+  background: #fafbfd;
+}
+.erp-support-evidence header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.erp-support-evidence h3 {
+  font-size: 12px;
+  margin: 0;
+}
+.erp-support-evidence dl {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 6px;
+  margin: 14px 0;
+  font-size: 11px;
+}
+.erp-support-evidence dt {
+  color: #798494;
+}
+.erp-support-evidence dd {
+  margin: 0;
+  text-transform: capitalize;
+}
+.erp-support-evidence p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #657181;
+}
+.erp-read-tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.erp-read-tags code {
+  padding: 4px 6px;
+  border: 1px solid #e0e6ee;
+  background: white;
+  border-radius: 4px;
+  font-size: 9px;
+  color: #526880;
+}
+.erp-guide-sources {
+  border-top: 1px solid #e1e6ed;
+  margin-top: 12px;
+  padding-top: 12px;
+  font-size: 11px;
+}
+.erp-guide-sources > strong {
+  font-weight: 500;
+}
+.erp-guide-sources > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 9px;
+}
+.erp-guide-sources small {
+  color: #8792a0;
+  font-size: 9px;
+}

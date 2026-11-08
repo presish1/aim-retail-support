@@ -1,6 +1,6 @@
 # 16 — Actual API, protocol and data reference
 
-**Local MVP v0.5.** Routes below exist in [app.py](../backend/app.py), [erp.py](../backend/erp.py) and [media.py](../backend/media.py). They are not the future Meta/courier/gateway endpoints. The application version and tool/record schemas are visible in source; generated FastAPI schema is available locally at `/openapi.json`.
+**Local MVP v0.6.** Routes below exist in [app.py](../backend/app.py), [erp.py](../backend/erp.py) and [media.py](../backend/media.py). They are not the future Meta/courier/gateway endpoints. The application version and tool/record schemas are visible in source; generated FastAPI schema is available locally at `/openapi.json`. Version 0.6 changes phone support orchestration and evidence without adding a public RAG endpoint: [document 18](18-conversational-rag.md).
 
 ## Boundary conventions
 
@@ -88,6 +88,8 @@ Customer reads can produce `VERIFICATION_REQUIRED`, `INACCESSIBLE_ORDER`, `ORDER
 | `THREADLINE_MODEL_URL` | Default local Ollama URL; compatible endpoint configured separately |
 | `THREADLINE_MODEL_API_KEY` | Optional backend-only endpoint secret; never frontend/Git/prompt |
 | `THREADLINE_MODEL_REGION` | Descriptive operator metadata, not technical proof of processing location |
+| `THREADLINE_SUPPORT_TEMPERATURE` | Phone support default `0.2`, clamped 0–0.7; changes sampling, not source authority |
+| `THREADLINE_SUPPORT_TOP_P` | Phone support default `0.8`, clamped 0.1–1 |
 | `THREADLINE_DB` | Optional local SQLite path; default `artifacts/local/threadline.db` |
 | `demo_now` / business timezone | Fixed rules clock / `Asia/Kolkata` |
 | `verification_mode` | `demo_match` or optional local `code` |

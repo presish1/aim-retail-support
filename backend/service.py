@@ -111,7 +111,7 @@ class Workflow:
             if candidate.strftime("%A").lower() not in schedule["days"] or str(candidate.date()) in schedule["holidays"]:
                 continue
             if offset == 0 and opens <= now.hour < closes:
-                return "Support is currently within its configured staffed hours; your request is queued for review."
+                return "Support is currently open. Your request is waiting for the store team."
             candidate = candidate.replace(hour=opens, minute=0, second=0, microsecond=0)
             if candidate > now:
                 return f"Support next opens {candidate.strftime('%A, %d %B at %H:%M')} {candidate.tzname()}. Your request will wait in the queue."

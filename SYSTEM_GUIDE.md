@@ -1,6 +1,6 @@
 # Threadline — complete MVP system guide
 
-**For the MBA presentation team and readers learning the system.** Local MVP v0.5, reviewed 7 November 2026 against code `d49563f`. [Repository](https://github.com/presish1/aim-retail-support) · [Presentation briefing](docs/PRESENTATION_BRIEF.md) · [Documentation map](docs/README.md).
+**For the MBA presentation team and readers learning the system.** Local MVP v0.6, reviewed 8 November 2026. [Repository](https://github.com/presish1/aim-retail-support) · [Presentation briefing](docs/PRESENTATION_BRIEF.md) · [Documentation map](docs/README.md) · [Current conversation/RAG reference](docs/18-conversational-rag.md).
 
 ## What it actually is
 
@@ -17,12 +17,12 @@ The management recommendation is to automate bounded information retrieval and s
 | Area | Implemented MVP | Proposed production work |
 | --- | --- | --- |
 | Customer channel | Phone-only WhatsApp-style browser UI, real WebSocket, resume, reply buttons and photo uploads | Official WhatsApp Business Platform adapter |
-| AI | Local Ollama `qwen3:8b`, four allowed tool proposals, rules baseline and labeled fallback | Provider/model selection after held-out evaluation and deployment review |
+| AI | Local Ollama `qwen3:8b`, typed support understanding and reply drafting, approved-guide RAG, factual blocks, rules baseline and labeled fallback | Held-out model/retrieval comparison; real weight tuning only if justified |
 | Identity | Existing synthetic account match or optional local code challenge | Real customer account linking, verified possession, staff authentication and permissions |
 | Data | Current SQLite customer/order/payment/return records | Existing commerce/OMS, courier and payment source adapters |
 | Returns | Questions, photos, quantity/address/window, review, explicit RMA submission and staff lifecycle | Real serviceability, reverse shipment, pickup and gateway reconciliation |
 | Sync | Shared database, revision checks, live workspace refresh and scoped customer updates | Durable event inbox/outbox, retry, reconciliation and multi-worker distribution |
-| Evidence | Source traces, revisions, activity records and 95 automated backend cases | Security assessment, held-out language evaluation, provider sandbox/load tests and operating metrics |
+| Evidence | Source traces, revisions, guide provenance, composition decisions, automated backend cases and authored real-model conversations | Security assessment, unseen language evaluation, provider sandbox/load tests and operating metrics |
 
 ## How does it differ from the existing system?
 
@@ -30,7 +30,7 @@ The retailer's actual systems have not been supplied. The following is a compari
 
 | Work | Assumed manual arrangement | Threadline's intended contribution |
 | --- | --- | --- |
-| Order query | Agent finds the purchase and types a status from the ERP | Authorized current read plus a backend-rendered answer |
+| Order query | Agent finds the purchase and types a status from the ERP | Contextual conversation with authorized current facts and checked wording |
 | Courier exception | Agent switches to a courier portal | Proposed mapped shipment lookup and evidence-backed escalation |
 | Return intake | Agent repeats questions and copies answers elsewhere | Structured, resumable intake saved with the request |
 | Refund query | Agent checks internal records and possibly a gateway | Clear distinction between internal recording and confirmed external state |
@@ -46,9 +46,9 @@ There is also a useful comparison with other chatbot designs:
 | Static FAQ/menu | Stable general questions | Does not by itself establish a customer's current order state |
 | LLM over policy documents | Explain approved policy passages | Document retrieval alone is not a current transactional order read |
 | Rules bot connected to APIs | Structured lookup and fixed workflows | Can provide the same factual controls; the MVP's model must prove added language value |
-| This MVP | Natural-language routing plus validated reads, structured return intake and staff workflow | Demonstrates how those responsibilities fit together; it is not proof of a unique capability or superiority over existing software |
+| This MVP | Contextual understanding/writing with retrieved guidance, validated live facts, return intake and staff workflow | Demonstrates how those responsibilities fit together; it is not proof of a unique capability or superiority over existing software |
 
-No new runtime capability is added by this documentation pass. It explains the current MVP and the future connection plan.
+Version 0.6 adds the conversational/RAG layer described below. The underlying live reads, operational records and commercial-action gates remain in place.
 
 ## Architecture in plain language
 
@@ -56,10 +56,12 @@ No new runtime capability is added by this documentation pass. It explains the c
 flowchart TD
     C[Customer phone] --> CH[Channel and account binding]
     CH --> W[Bounded workflow]
-    W <--> M[Qwen: intent and tool proposal]
+    W --> KB[Approved support-guide retrieval]
+    KB --> M[Qwen: understand concern and draft wording]
+    M --> W
     W --> G[Authorized reads and business rules]
     G --> DB[(Current order and return records)]
-    G --> R[Backend response templates]
+    G --> R[Verified factual blocks and reply validation]
     R --> C
     A[Staff ERP] --> API[Validated operations API]
     API --> DB
@@ -75,17 +77,17 @@ The current application is a modular monolith, not a cluster of independent AI a
 | --- | --- | --- |
 | Experience/channel | Phone and ERP; messages, forms, acknowledgements and reconnect | `src/WhatsApp.tsx`, `src/App.tsx`, `backend/whatsapp.py` |
 | Identity/session | Bind a customer in server state; separate operator capability | `backend/app.py`, `backend/whatsapp.py` |
-| Workflow | Decide supported path, clarify, run return intake or hand off | `backend/service.py`, `backend/returns_flow.py` |
-| AI adapter | One bounded proposal from four schemas | `backend/model.py` |
+| Conversation workflow | Context, requested details, approved guidance, clarify, return intake or handoff | `backend/support.py`, `backend/returns_flow.py` |
+| AI and retrieval | One typed understanding/writing call; approved local BM25 guide search | `backend/support_plan.py`, `backend/retrieval.py`, `backend/model.py` |
 | Read/rule boundary | Ownership, source health, source validation and policy calculation | `backend/reads.py`, `backend/service.py` |
 | Operations/storage | Record changes, revisions, returns, tickets and transaction checks | `backend/erp.py`, `backend/store.py`, `backend/media.py` |
-| Response/evidence/sync | Render facts, persist available evidence and announce changes | `backend/service.py`, `backend/whatsapp.py`, `src/useWorkspace.ts` |
+| Response/evidence/sync | Compile checked wording with factual blocks, record provenance and announce changes | `backend/composition.py`, `backend/support.py`, `backend/whatsapp.py`, `src/useWorkspace.ts` |
 
 See [the architecture reference](docs/03-architecture.md) for component and sequence diagrams.
 
 ## Three meanings of “tool”
 
-**The model can propose four tools:**
+**The current phone model produces a typed support plan and draft reply.** It identifies the concern, requested facts and relevant retrieved guide IDs. The controller then invokes allowed reads and workflows. The model cannot execute arbitrary SQL or external APIs. The following four tools remain exposed by the **older HTTP chat workflow**:
 
 | Actual model tool | Meaning | Authority limit |
 | --- | --- | --- |
@@ -105,18 +107,19 @@ See [the architecture reference](docs/03-architecture.md) for component and sequ
 3. The workflow derives the order ID from explicit words or confirmed context. A model-suggested unmentioned order is not accepted as evidence of the customer's choice.
 4. `get_order` reads the owned current record. It checks source health, enum/type/date fields, item totals and selected consistency conditions.
 5. For a status response, `get_payment` rereads the current payment projection and checks the expected order revision. A change between the two reads produces a refresh response, rather than a mixed snapshot.
-6. Backend templates render the status, available estimate, product/variant, INR total, payment state, destination and stored tracking reference. Available evidence and actual inference/fallback mode are recorded.
+6. The support model drafts focused language using retrieved guidance and factual placeholders. The compiler requires the requested fresh facts, checks generated wording and inserts complete source-rendered paragraphs. If a check fails or the order changed during inference, the approved/source renderer supplies the answer. Action confirmations always come from the guarded workflow. Available evidence, actual inference mode and composition/fallback are recorded.
 7. Staff can update fulfilment inline. The committed revision changes, an eligible selected customer conversation receives a source-backed update, and the next supported question independently rereads the source.
 
 History supplies conversation context, not authority for a current delivery status. A fresh database fetch and a recent upstream courier scan are different things.
 
 ## How hallucinations are constrained
 
-The central design decision is to remove the language model from authoring transactional facts. Accuracy is not delegated to a prompt that says “do not hallucinate.”
+The central design decision is to keep transactional values outside generated prose. The model can write helpful conversational language; dates, prices, tracking IDs and status come from verified paragraphs. Accuracy is not delegated to a prompt that says “do not hallucinate.”
 
 | Possible failure | Implemented control |
 | --- | --- |
-| Invented status or ETA | Source projection and backend response templates |
+| Invented status or ETA | Fresh source projection, locked factual paragraphs and targeted prose validation |
+| Unsupported general explanation | Approved retrieved guidance, guide-ID checks, instruction-leak checks and fallback; semantic errors remain possible |
 | Model guesses another purchase | Explicit/confirmed reference handling plus ownership check |
 | Wrong customer's data | Ownership enforced for customer-facing order reads |
 | Old answer reused during outage | Current read required; source failure blocks the normal factual path |
@@ -126,7 +129,15 @@ The central design decision is to remove the language model from authoring trans
 | Prompt asks for immediate refund | No model refund tool; separate staff-controlled lifecycle |
 | Claimed success without storage | Guarded paths report success after actual ticket/RMA/ledger persistence |
 
-This does not guarantee zero mistakes. Sources can be wrong; item/intent heuristics can choose the wrong supported path; templates or rules can contain bugs; customer condition statements can be inaccurate; an upstream feed can lag without a correct health signal. The 95 tests establish behavior in defined cases, not a universal hallucination rate. [Document 11](docs/11-grounding-and-safety.md) connects each control to evidence and residual risk.
+This does not guarantee zero mistakes. Sources can be wrong; the model can misunderstand an issue or add a qualitative statement that the validator misses; item heuristics, templates and rules can contain bugs; customer reports may be inaccurate; a feed may lag without a correct health signal. Tests establish behavior in defined cases, not a universal hallucination rate. [Document 11](docs/11-grounding-and-safety.md) connects controls to residual risk.
+
+## RAG, temperature and fine-tuning
+
+The current RAG retrieves from 25 approved support passages using local BM25 with topic boosts. It supplies explanations and response guidance; it does not store customers' orders or replace current API reads. Numeric return windows still come from the structured policy. ERP Conversations exposes retrieved/used passage IDs, version/digest, named reads and whether model wording was accepted.
+
+Qwen3-8B runs through local Ollama. Phone defaults are temperature **0.2**, top-p **0.8**, non-thinking mode, context limit 6,144 tokens and output limit 380 tokens. One free-text turn has at most one model call; exact buttons/social turns can avoid inference. Temperature controls sampling variability. Understanding depends on the model, instructions, examples, conversation context and retrieval.
+
+**The weights have not been fine-tuned.** This release improves prompts, retrieval, context, schema and decoding. Sixteen synthetic training examples and a genuine future tuning/evaluation plan are included under [training](training/README.md). See [document 18](docs/18-conversational-rag.md) for the full contract, examples and remaining limits.
 
 ## Why “totally safe” would be inaccurate
 
@@ -181,7 +192,7 @@ Present the MVP's feasibility and a conditional pilot recommendation. First iden
 
 Measure correct task/order/item selection, factual matching, disclosures/actions, handoff quality, useful-answer latency, stale sources, message failures and total cost. Count queries, cases and messages separately. Four hundred daily queries is an assignment input, not a measured peak-concurrency trace. Capacity saved is not automatically payroll cash saved.
 
-There are 95 automated backend cases for defined source, workflow, transport and transaction conditions. Many use baseline routing or forced-offline model doubles. Historical real-model smoke evidence covers 12 authored scenarios, not an unseen benchmark. Language performance, production load, external provider behavior, security and ROI remain to be established. [Evidence and FAQ](docs/17-evidence-and-faq.md) lists presentation-safe claims.
+The backend suite covers defined source, conversation, retrieval, transport and transaction conditions; many cases use baseline routing or model doubles. The current runner also executes 16 authored multi-turn scenarios in baseline and real-Qwen mode. These development regressions are not an unseen benchmark. Production language performance, load, external providers, security and ROI remain to be established. [Evidence and FAQ](docs/17-evidence-and-faq.md) records counts, results and presentation-safe claims.
 
 ## Learning from this repository with an assistant
 

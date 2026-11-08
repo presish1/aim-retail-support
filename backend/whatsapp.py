@@ -16,6 +16,7 @@ from starlette.websockets import WebSocketDisconnect
 from .service import date_label, iso_now
 from .reads import SourceError, read_audit
 from .returns_flow import ReturnFlow, choices
+from .support import SupportConversation
 
 
 class ChannelHub:
@@ -85,6 +86,7 @@ class WhatsAppChannel:
     def __init__(self, store, workflow, hub):
         self.store, self.workflow, self.hub = store, workflow, hub
         self.returns = ReturnFlow(store, workflow)
+        self.support = SupportConversation(self)
 
     @staticmethod
     def bot_message(text, **extra):
@@ -189,6 +191,9 @@ class WhatsAppChannel:
                 await self.hub.emit(session_id, {"type": "typing", "active": False})
 
     async def respond(self, record, text, mode):
+        return await self.support.respond(record, text, mode)
+
+    async def legacy_respond(self, record, text, mode):
         record["latest_trace"] = None
         if record.get("return_draft"):
             try:
@@ -257,13 +262,14 @@ class WhatsAppChannel:
 
     async def complete_match(self, record, customer, mode, method):
         self.store.bind_customer(record["id"], customer["customer_id"])
+        record["context_start"] = len(record["messages"])
         record.update(stage="verified", verification_method=method, candidate_customer=customer["customer_id"], demo_code=None, code_hash=None, expires_at=0, attempts=0)
         question = record["pending_request"] or "Where is my order?"
         if re.fullmatch(r"\s*(hi|hello|hey|hi there|hello there)[!. 👋]*\s*", question, re.I):
             question = "Where is my order?"
         record["pending_request"] = question
         self.store.log("customer", customer["customer_id"], "matched", f"{customer['first_name']} matched in WhatsApp", actor="Customer channel")
-        result = await self.route_verified(record, question, mode)
+        result = await self.support.after_match(record, question, mode)
         prefix = f"Thanks, {customer['first_name']}. I found your account.\n\n"
         if isinstance(result, str):
             return prefix + result

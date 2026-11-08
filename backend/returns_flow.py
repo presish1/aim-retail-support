@@ -29,11 +29,14 @@ class ReturnFlow:
         channel["return_draft"] = {"order_id": order_id, "step": "item", "photos": []}
         named = [i for i in order["items"] if i["item_id"] in text or i["name"].lower() in text.lower()]
         if len(order["items"]) == 1 or len(named) == 1:
-            return self.select_item(channel, order, named[0] if named else order["items"][0])
+            return self.select_item(channel, order, named[0] if named else order["items"][0], text)
         return choices(f"*Return · Order #{order_id}*\n\nWhich item would you like to return? We'll check it separately, even if the rest of your order is still on the way.", [(i["name"], "Return item " + i["item_id"]) for i in order["items"]])
 
-    def select_item(self, channel, order, item):
-        decision = self.workflow.return_result(order, item, "")
+    def select_item(self, channel, order, item, claim_words=""):
+        if re.search(r"damaged|faulty|broken|wrong item",claim_words,re.I) and not item.get("delivered_at"):
+            channel.pop("return_draft",None)
+            return choices("You're reporting a received item, but this purchase isn't marked delivered yet. The store needs to check that mismatch and your damage report before arranging the return.",[("Ask the store to review","Please ask support to review my damaged item for order #"+order["order_id"])])
+        decision = self.workflow.return_result(order, item, claim_words.lower())
         if decision["decision"] in ("existing_return", "ineligible") or decision["reason"] in ("Not delivered", "Already returned"):
             channel.pop("return_draft", None)
             return choices(decision["message"], [("Ask the store to review", "Please contact support about return for order #" + order["order_id"])])
@@ -121,7 +124,7 @@ class ReturnFlow:
             # Recheck live policy, delivery and deadline at submission, not just at intake.
             if not policy["create_return_enabled"]:
                 return {"text": "The store has paused return submissions. This draft has not been submitted. Please ask support to help."}
-            check = self.workflow.return_result(order, item, "")
+            check = self.workflow.return_result(order, item, draft["reason"].lower())
             if check["decision"] == "ineligible" or check["reason"] in ("Not delivered", "Already returned"):
                 channel.pop("return_draft", None)
                 return {"text": "The order changed while we were preparing this request. " + check["message"]}

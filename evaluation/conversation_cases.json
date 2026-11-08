@@ -1,0 +1,18 @@
+[
+  {"id":"general_policy","turns":["Could you explain the return policy?"],"expect":{"intent":"policy","outcome":"GUIDE_ANSWER","guide":"return_policy","contains":"30","stage":"contact"}},
+  {"id":"refund_timing","turns":["How long do I need to wait for my refund?"],"expect":{"intent":"policy","guide":"refund_timing","stage":"contact","no_tickets":true}},
+  {"id":"privacy_question","turns":["Why do you need my mobile number?"],"expect":{"intent":"identity","guide":"identity_reason","stage":"contact"}},
+  {"id":"tracking_only","turns":["Where is my order?","aarav@example.com","4812","Please give me just the tracking number"],"expect":{"intent":"order_status","contains":"DEMO4812IN","not_contains":"₹","order":"4812"}},
+  {"id":"arrival_followup","turns":["aarav@example.com","4812","When should I expect it to arrive?"],"expect":{"intent":"order_status","contains":"9 November","order":"4812"}},
+  {"id":"urgent_occasion","turns":["aarav@example.com","4812","My hoodie is late and I need it for a wedding tomorrow"],"expect":{"intent":"delivery_delay","contains":"9 November","order":"4812","offer":true}},
+  {"id":"compound_facts","turns":["aarav@example.com","4812","What did I order, how much was the total and is payment paid?"],"expect":{"intent":"order_status","contains_all":["Weekday Hoodie","1,999.00","paid"]}},
+  {"id":"plain_language_reason","turns":["aarav@example.com","Return order 4813","the shirt is too tight for me"],"expect":{"draft_step":"condition","reason":"Size or fit"}},
+  {"id":"combined_condition_tags","turns":["aarav@example.com","Return order 4813","Size or fit","I just tried it on and the tag is still on it"],"expect":{"draft_step":"photos","condition":"Unworn / only tried on","tags":"Tags attached"}},
+  {"id":"tags_question_interrupt","turns":["aarav@example.com","Return order 4813","Size or fit","What do you mean by original tags?"],"expect":{"intent":"policy","guide":"garment_tags","draft_step":"condition"}},
+  {"id":"fee_question_interrupt","turns":["aarav@example.com","Return order 4813","Size or fit","Unworn / only tried on","Tags attached","Is return pickup free?"],"expect":{"intent":"policy","guide":"return_cost","draft_step":"photos","no_tickets":true}},
+  {"id":"no_wash_not_enough","turns":["aarav@example.com","Return order 4813","Size or fit","I haven't washed it"],"expect":{"draft_step":"condition","contains":"worn"}},
+  {"id":"cross_account","turns":["aarav@example.com","Track order 4901"],"expect":{"outcome":"INACCESSIBLE_ORDER","not_contains":"Utility Jacket"}},
+  {"id":"source_outage","turns":["aarav@example.com","4812","Check the latest status"],"controls_before_last":{"order_api_available":false},"expect":{"outcome":"ORDER_SERVICE_UNAVAILABLE","not_contains":"9 November"}},
+  {"id":"human_preserves_draft","turns":["aarav@example.com","Return order 4813","Size or fit","I want to speak to a person"],"expect":{"outcome":"HANDOFF_CREATED","draft_step":"condition","ticket_count":1}},
+  {"id":"different_purchase","turns":["aarav@example.com","4812","I want to return the white shirt"],"expect":{"order":"4813","draft_step":"reason"}}
+]

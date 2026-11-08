@@ -18,7 +18,7 @@ from .whatsapp import ChannelHub, WhatsAppChannel
 from . import erp, media
 
 
-app = FastAPI(title="Threadline synthetic support API", version="0.5.0")
+app = FastAPI(title="Threadline synthetic support API", version="0.6.0")
 store = Store()
 adapter = ModelAdapter()
 workflow = Workflow(store, adapter)

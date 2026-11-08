@@ -1403,6 +1403,63 @@ export function ConversationView({
         ))}
       </div>
       {record.latest_trace && (
+        <section className="erp-support-evidence">
+          <header>
+            <h3>How this reply was produced</h3>
+            <Badge value={record.latest_trace.mode} />
+          </header>
+          {record.latest_trace.plan && (
+            <dl>
+              <dt>Customer intent</dt>
+              <dd>{record.latest_trace.plan.intent.replaceAll("_", " ")}</dd>
+              <dt>Answer focus</dt>
+              <dd>
+                {record.latest_trace.plan.facets
+                  .join(", ")
+                  .replaceAll("_", " ") || "Contextual next step"}
+              </dd>
+            </dl>
+          )}
+          <p>
+            {record.latest_trace.composition?.model_written
+              ? "Model-written support language with verified fact blocks."
+              : "Source-backed response or validated workflow step."}
+          </p>
+          {!!record.latest_trace.reads?.length && (
+            <div className="erp-read-tags">
+              {[
+                ...new Set(record.latest_trace.reads.map((r) => r.function)),
+              ].map((f) => (
+                <code key={f}>{f}</code>
+              ))}
+            </div>
+          )}
+          {!!record.latest_trace.retrieval?.used_chunk_ids?.length && (
+            <div className="erp-guide-sources">
+              <strong>Support guidance used</strong>
+              {record.latest_trace.retrieval.chunks
+                .filter((c) =>
+                  record.latest_trace!.retrieval!.used_chunk_ids.includes(c.id),
+                )
+                .map((c) => (
+                  <div key={c.id}>
+                    <span>{c.title}</span>
+                    <small>
+                      {c.id} · {record.latest_trace!.retrieval!.version}
+                    </small>
+                  </div>
+                ))}
+            </div>
+          )}
+          {record.latest_trace.composition?.fallback_reason && (
+            <small className="erp-muted">
+              Wording check: {record.latest_trace.composition.fallback_reason}.
+              Verified response used.
+            </small>
+          )}
+        </section>
+      )}
+      {record.latest_trace && (
         <details className="erp-trace">
           <summary>Response evidence</summary>
           <pre>{JSON.stringify(record.latest_trace, null, 2)}</pre>

@@ -1,6 +1,6 @@
 # Documentation map
 
-**Current scope: MVP v0.5 · reviewed 7 November 2026 against code baseline `d49563f`.** This is an MBA Scenario A prototype for an Indian D2C apparel store. Its customer, purchase, price and policy records are fictional.
+**Current scope: MVP v0.6 · reviewed 8 November 2026.** This is an MBA Scenario A prototype for an Indian D2C apparel store. Its customer, purchase, price and policy records are fictional. Version 0.6 adds contextual support, approved-guide RAG and checked model wording; no weight fine-tuning or real provider connection is claimed.
 
 ## Start here
 
@@ -33,6 +33,7 @@ The system is not certified “totally safe,” production-ready, or universally
 | [15 — Production plan and operations](15-production-plan-and-operations.md) | MVP-to-pilot stages, ownership, deployment, costs, metrics and stop conditions |
 | [16 — API and data reference](16-api-and-data-reference.md) | Current endpoints, socket events, records, settings and error contracts |
 | [17 — Evidence and FAQ](17-evidence-and-faq.md) | Verification scope, known gaps, management questions and learning prompts |
+| [18 — Conversational support and RAG](18-conversational-rag.md) | Model understanding/writing, guide retrieval, factual blocks, decoding, training boundaries and code map |
 | [Sources](sources.md) | Code evidence and dated primary external references |
 | [Demo data](../data/README.md) | Fictional accounts, orders, policy and fixed clock |
 
@@ -42,4 +43,4 @@ For a business presentation read the briefing, system guide, scenarios and evide
 
 [01 — Definition](01-project-definition.md) records assignment facts and assumptions. [02 — Service design](02-service-design.md) and [04 — Prototype specification](04-prototype-specification.md) are early explorations. [05 — Models/business case](05-models-and-business-case.md) contains provisional comparisons and arithmetic, not a completed benchmark or provider quote. [06 — Evaluation plan](06-evaluation-and-handoff.md) contains proposed targets. [07 — v0.2 status](07-implementation-status.md), [08 — Earlier WhatsApp design](08-whatsapp-experience.md), and [09 — v0.4 ERP](09-erp-workspace.md) are historical snapshots.
 
-Use current code and the current references above for present-tense feature claims. India/INR supersedes the original draft's US-store assumption. The actual retailer's existing software has not been identified, so comparisons with an “existing system” are conditional.
+Use current code and the current references above for present-tense feature claims. Document 10 records the v0.5 return design retained in v0.6; document 18 supersedes its older model/response diagram. India/INR supersedes the original draft's US-store assumption. The actual retailer's existing software has not been identified, so comparisons with an “existing system” are conditional.
