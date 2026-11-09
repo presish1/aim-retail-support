@@ -7,15 +7,24 @@ It never supplies transactional values or authorizes writes. One model call at m
 import re
 import time
 import uuid
-from zoneinfo import ZoneInfo
 
 from .model import ModelUnavailable
 from .reads import SourceError, read_audit
 from .retrieval import guides
-from .service import iso_now, date_label, parse_time
+from .service import iso_now, date_label
 from .support_plan import SupportPlan, ReportedSlots, explicit_slots, fallback_plan
 from .composition import compile_reply
 from .hybrid import HybridRetriever
+from .delivery import estimate_text, estimate_state
+from .order_changes import OrderChanges
+
+OFFER_ACCEPT = re.compile(
+    r"(?:yes|yes please|please do|go ahead|do that|yes that would help|that would be (?:great|helpful)|please check|okay|ok|sure|sure please)[.! ]*",
+    re.I,
+)
+OFFER_DECLINE = re.compile(
+    r"(?:no|no thanks|no thank you|not now|all good|that works for me)[.! ]*", re.I
+)
 
 TOPICS = {
     "identity": ["identity"],
@@ -26,6 +35,7 @@ TOPICS = {
     "return_status": ["return_status"],
     "refund_status": ["refund_status"],
     "exchange": ["exchange"],
+    "size_change": ["size_change"],
     "cancel": ["cancel"],
     "address_change": ["address_change"],
     "human": ["human"],
@@ -80,6 +90,7 @@ PURCHASE = {
     "exchange",
     "cancel",
     "address_change",
+    "size_change",
 }
 
 
@@ -140,16 +151,29 @@ class SupportConversation:
         self.channel = channel
         self.store, self.workflow = channel.store, channel.workflow
         self.retriever = HybridRetriever(self.workflow.model)
+        self.changes = OrderChanges(self.store, self.workflow, match_items)
 
     def context(self, record):
         recent = record["messages"][record.get("context_start", 0) :][-4:]
+        question = next(
+            (
+                m["text"].split("\n")[-1]
+                for m in reversed(recent)
+                if m["role"] == "assistant" and m["text"].rstrip().endswith("?")
+            ),
+            "",
+        )
         return {
             "stage": record["stage"],
             "selected_order": record.get("selected_order"),
             "return_step": (record.get("return_draft") or {}).get("step", ""),
+            "size_change_step": (record.get("size_change") or {}).get("step", ""),
             "last_intent": record.get("last_intent", ""),
             "last_facets": record.get("last_facets", []),
             "pending_offer": record.get("pending_offer"),
+            "last_assistant_question": re.sub(
+                r"\d[\d,.:-]*", "[verified value]", question[-220:]
+            ),
             "recent_messages": [
                 {"role": m["role"], "text": m["text"][:280]} for m in recent
             ],
@@ -215,6 +239,7 @@ class SupportConversation:
                 "fulfilment": known["status"],
                 "payment": known["payment_status"],
                 "estimate_available": bool(known.get("carrier_eta_date")),
+                "estimate_state": estimate_state(known, self.store.setting("demo_now")),
             }
         fallback = fallback_plan(text, context)
         requested = [
@@ -251,11 +276,14 @@ class SupportConversation:
             "Submit return request",
             "Cancel return request",
             "Edit pickup address",
+            "Confirm size change",
+            "Cancel size change",
             "Weekday · 10 am–2 pm",
             "Weekday · 2–6 pm",
         } or bool(
             re.fullmatch(
-                r"(?:Order #\d{4}|Return item \d{4}-\d+|Return quantity \d+)", text
+                r"(?:Order #\d{4}|Return item \d{4}-\d+|Change item \d{4}-\d+|Return quantity \d+)",
+                text,
             )
         )
         # Social turns and exact button contracts don't need inference.
@@ -263,6 +291,23 @@ class SupportConversation:
             canonical
             or fallback.intent in ("greeting", "thanks")
             or re.fullmatch(r"\d{1,6}", text.strip())
+            or (
+                record.get("pending_offer")
+                and (OFFER_ACCEPT.fullmatch(text) or OFFER_DECLINE.fullmatch(text))
+            )
+            or (
+                record.get("size_change")
+                and (
+                    re.fullmatch(
+                        r"(?:XS|S|M|L|XL|XXL|28|30|32|34|36)", text.strip(), re.I
+                    )
+                    or re.fullmatch(
+                        r"(?:yes|yes please|sure|okay|yes[, ]+change it)[.! ]*",
+                        text,
+                        re.I,
+                    )
+                )
+            )
         )
         used_mode, note = "baseline", None
         usage = {"input_tokens": 0, "output_tokens": 0}
@@ -306,6 +351,8 @@ class SupportConversation:
             plan.intent = "return_answer"
         if fallback.intent == "identity":
             plan.intent, plan.facets = "identity", []
+        if fallback.intent == "size_change":
+            plan.intent, plan.facets = "size_change", []
         if fallback.intent == "delivery_dispute":
             plan.intent = "delivery_dispute"
         if fallback.intent == "human":
@@ -468,7 +515,12 @@ class SupportConversation:
                 )
             else:
                 generated, composition_note = compile_reply(
-                    template, facts, required, plan.guide_ids, available
+                    template,
+                    facts,
+                    required,
+                    plan.guide_ids,
+                    available,
+                    customer_text=text,
                 )
                 if generated:
                     result["text"] = generated
@@ -479,6 +531,58 @@ class SupportConversation:
                         )
                     result["_guide_ids"] = plan.guide_ids
                     composed = True
+                    if (
+                        plan.next_step == "delivery_investigation"
+                        and result.get("outcome")
+                        in ("ORDER_STATUS", "DELIVERY_EXCEPTION")
+                        and evidence
+                    ):
+                        record["pending_offer"] = {
+                            "request": text,
+                            "order_id": evidence["order_id"],
+                            "kind": "delivery_investigation",
+                        }
+                        if not plan.closing.rstrip().endswith("?"):
+                            result["text"] += (
+                                "\n\nWould you like me to ask the store to check the delivery?"
+                            )
+                        result["actions"] = [
+                            action("Yes, ask the store", "Yes please"),
+                            action("Not now", "No thanks"),
+                        ]
+        # Free-text intake answers can receive a brief acknowledgement. The next question
+        # and all fields/consent still come from the guarded return state machine.
+        draft = record.get("return_draft") or {}
+        if (
+            not composed
+            and meta["mode"] == "model"
+            and plan.opening
+            and len(plan.opening) <= 220
+            and plan.intent in ("return_answer", "return_start")
+            and result.get("outcome") == "RETURN_INTAKE"
+            and draft.get("step")
+            in (
+                "reason",
+                "condition",
+                "tags",
+                "photos",
+                "quantity",
+                "address",
+                "window",
+            )
+        ):
+            prefix, reason = compile_reply(
+                plan.opening,
+                {},
+                guide_ids=plan.guide_ids,
+                available_guides={d["id"] for d in meta.get("planning_retrieved", [])},
+                customer_text=text,
+            )
+            if prefix:
+                result["text"] = prefix + "\n\n" + result["text"]
+                composed = True
+            else:
+                composition_note = reason
         trace = {
             "id": "run-" + uuid.uuid4().hex[:10],
             "at": iso_now(),
@@ -692,6 +796,7 @@ class SupportConversation:
                     pending_request="Where is my order?",
                 )
                 record.pop("return_draft", None)
+                record.pop("size_change", None)
                 record.pop("pending_plan", None)
             remainder = text.replace(identifier, "").strip(" ,.;\n")
             if re.search(
@@ -733,6 +838,37 @@ class SupportConversation:
                 return self.finish(
                     record, text, self.general(record, text, plan, meta), meta, started
                 )
+            if record.get("size_change") or text == "Confirm size change":
+                amended = self.changes.handle(record, text)
+                if amended is not None:
+                    if amended.get("outcome") == "SIZE_CHANGED":
+                        await self.channel.hub.source_changed(
+                            self.store, record["selected_order"]
+                        )
+                    plan.intent = "size_change"
+                    return self.finish(record, text, amended, meta, started)
+            if plan.intent == "size_change":
+                return self.finish(
+                    record, text, self.purchase(record, text, plan, meta), meta, started
+                )
+            # A pending exchange-review offer takes priority over an unrelated return draft.
+            if (record.get("pending_offer") or {}).get("kind") == "size_change_review":
+                if OFFER_ACCEPT.fullmatch(text):
+                    return self.finish(
+                        record, text, self.handoff(record, text, None), meta, started
+                    )
+                if OFFER_DECLINE.fullmatch(text):
+                    record["pending_offer"] = None
+                    return self.finish(
+                        record,
+                        text,
+                        {
+                            "text": "No problem. Message me here if you'd like the store to check it later.",
+                            "outcome": "ACKNOWLEDGED",
+                        },
+                        meta,
+                        started,
+                    )
             if record.get("return_draft"):
                 result = self.handle_draft(record, text, plan, meta)
                 if result is not None:
@@ -740,10 +876,21 @@ class SupportConversation:
             if text in ("Start a return", "My orders", "Choose another order"):
                 record.update(stage="verified", selected_order=None, choices=[])
             # A short acceptance of a previously offered handoff is explicit consent.
-            if record.get("pending_offer") and re.fullmatch(
-                r"(?:yes|yes please|please do|go ahead|do that)[.! ]*", text, re.I
-            ):
+            if record.get("pending_offer") and OFFER_ACCEPT.fullmatch(text):
                 plan.intent = "human"
+            elif record.get("pending_offer") and OFFER_DECLINE.fullmatch(text):
+                record["pending_offer"] = None
+                plan.intent = "thanks"
+                return self.finish(
+                    record,
+                    text,
+                    {
+                        "text": "No problem. If you need help with the delivery later, just message me here.",
+                        "outcome": "ACKNOWLEDGED",
+                    },
+                    meta,
+                    started,
+                )
             if plan.intent in (
                 "greeting",
                 "thanks",
@@ -835,6 +982,17 @@ class SupportConversation:
                 selected_order=order["order_id"], stage="verified", choices=[]
             )
             return order
+        # Repeating the current product name is a follow-up, even if it was bought twice.
+        # An explicit request for another purchase still requires disambiguation.
+        if (
+            len(named) > 1
+            and any(o["order_id"] == record.get("selected_order") for o in named)
+            and not re.search(r"\b(?:another|different|other)\b", text, re.I)
+        ):
+            record.update(stage="verified", choices=[])
+            return self.workflow.read_order(
+                session["customer"], record["selected_order"]
+            )
         if record.get("selected_order") and not named:
             return self.workflow.read_order(
                 session["customer"], record["selected_order"]
@@ -861,6 +1019,9 @@ class SupportConversation:
                 o for o in candidates if any(i.get("delivered_at") for i in o["items"])
             ]
             candidates = delivered or candidates
+        elif plan.intent == "size_change":
+            editable = [o for o in candidates if o["status"] == "processing"]
+            candidates = editable or candidates
         if len(candidates) == 1:
             order = candidates[0]
             record.update(
@@ -921,7 +1082,10 @@ class SupportConversation:
         )
         record.pop("pending_plan", None)
         record["pending_request"] = ""
+        if plan.intent == "size_change":
+            return self.changes.start(record, order, original)
         if plan.intent == "return_start":
+            record["pending_offer"] = None
             matched_items = match_items(order["items"], original)
             if len(matched_items) == 1:
                 original += "\nReturn item " + matched_items[0]["item_id"]
@@ -1049,28 +1213,7 @@ class SupportConversation:
         return f"Your {name} from order *#{order['order_id']}* {status}."
 
     def eta_text(self, order):
-        if order["status"] == "delivered":
-            dates = [i["delivered_at"] for i in order["items"] if i.get("delivered_at")]
-            return (
-                "The saved delivery date is *"
-                + date_label(max(dates))
-                + "*. If you haven't received it, tell me and I'll help report that."
-                if dates
-                else "It is marked delivered, but a delivery date isn't available."
-            )
-        if order["status"] in ("cancelled", "returned"):
-            return "There isn't an active delivery estimate for this order."
-        eta = order.get("carrier_eta_date")
-        if not eta:
-            return "There isn't a confirmed delivery estimate in the current record. I can ask the store to check dispatch or the courier update."
-        today = (
-            parse_time(self.store.setting("demo_now"))
-            .astimezone(ZoneInfo("Asia/Kolkata"))
-            .date()
-        )
-        if parse_time(eta).date() < today:
-            return f"The carrier's last estimate was *{date_label(eta)}*. That date has passed and no newer estimate is saved. I can't give you a reliable new arrival date yet."
-        return f"The carrier currently estimates *{date_label(eta)}*. That's an estimate, so I can't guarantee a particular time or an earlier arrival."
+        return estimate_text(order, self.store.setting("demo_now"))
 
     def order_reply(self, record, order, text, plan, meta):
         facets = plan.facets or ["summary"]
@@ -1156,6 +1299,15 @@ class SupportConversation:
                 action("Return an item", "Start a return"),
                 action("Other orders", "Choose another order"),
             ]
+            if facets == ["tracking"]:
+                actions = [actions[0]]
+            elif facets == ["eta"]:
+                actions = [
+                    action(
+                        "Ask the store to check",
+                        "Please ask support to check my delivery",
+                    )
+                ]
         result = {
             "text": "\n\n".join(paragraphs),
             "actions": actions,

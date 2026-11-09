@@ -2,7 +2,7 @@
 
 **Audience:** MBA AI in Management team. **Purpose:** help the team build its own presentation now. This is a content and speaker-note pack, not a claim that the production integrations are finished.
 
-Use the [system guide](../SYSTEM_GUIDE.md) and [documentation map](README.md). Current scope is v0.7: Gemini + hybrid RAG + live database reads. [Document 19](19-gemini-hybrid-live-data.md) gives the detailed architecture. Records are fictional; generation and embedding API calls are real. Fine-tuning is outside scope.
+Use the [system guide](../SYSTEM_GUIDE.md) and [documentation map](README.md). Current scope is v0.8: Gemini + hybrid RAG + live database reads. [Document 19](19-gemini-hybrid-live-data.md) gives the detailed architecture. Records are fictional; generation and embedding API calls are real. Fine-tuning is outside scope.
 
 ## The one-minute story
 
@@ -41,7 +41,7 @@ flowchart LR
     W --> H[Human support and evidence]
 ```
 
-**How to explain it:** “The model understands the customer and writes helpful language from approved guidance. The server checks access, reads current business data and inserts the requested factual paragraphs. It validates wording or uses the source renderer. Staff writes to the operational record. Future adapters connect these same boundaries to the retailer's actual systems.”
+**How to explain it:** “The model understands the customer and writes helpful language from approved guidance. The server checks access, reads current business data and inserts the requested factual paragraphs. It validates wording or uses the source renderer. Staff writes to the operational record; a narrowly scoped size change can also be saved after explicit customer confirmation and transaction checks. Future adapters connect these same boundaries to the retailer's actual systems.”
 
 ## The live demo, with narration
 
@@ -60,6 +60,12 @@ Use the running app from [README](../README.md). The browser phone and dashboard
 | 9 | Show staff approval, booking reference, receipt and inspection/refund gates | “This MVP records the workflow. It does not call a carrier or transfer money.” |
 
 The first six steps are the core live-data proof. Use the return sequence as a second demo or screenshots if time is short. Keep a recording/screenshots as a backup for local model/server issues. Do not invent a performance result if the demo is slow.
+
+## Additional demo: a confirmed customer change
+
+Use **Demo tools → Prepare a size-change demo**, review and create the S order for Aarav, then note its ID. Keep its ERP drawer open. In chat ask “I ordered S but need M for order [ID].” Show the preview, confirm, and observe M and the new revision in ERP. Show the activity entry. Explain: “AI understood the request; the server checked ownership, offered sizes, fulfilment and consent, then saved size and audit atomically. The configured range is not warehouse stock.” An in-transit order instead offers store review.
+
+For the estimate demo, set a date from the Orders table, observe the short customer update, and ask for arrival. Clear the date and show that the assistant admits it is unknown. Presets use the displayed fixed demo date. [Full sequence and limits](20-delivery-and-order-actions.md).
 
 ## Ready-to-use wording for difficult claims
 

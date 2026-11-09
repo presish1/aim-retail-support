@@ -1,6 +1,6 @@
 # 03 — Architecture: current MVP and proposed integrations
 
-**Current implementation: v0.7 · 8 November 2026.** The [system guide](../SYSTEM_GUIDE.md) is the business explanation; [document 19](19-gemini-hybrid-live-data.md) specifies Gemini, hybrid RAG and the live-data contract. The production diagram is a proposal.
+**Current implementation: v0.8 · 9 November 2026.** The [system guide](../SYSTEM_GUIDE.md) is the business explanation; [document 19](19-gemini-hybrid-live-data.md) specifies Gemini, hybrid RAG and the live-data contract. The production diagram is a proposal.
 
 ## The design decision
 
@@ -17,7 +17,7 @@ flowchart LR
     subgraph Local[Local laptop - synthetic records]
         V[Vite :5173]
         API[FastAPI :8000]
-        WF[Conversation and return workflow]
+        WF[Conversation and guarded workflows]
         KB[Approved guide index - BM25 and vector cache]
         COMP[Reply compiler and source fallback]
         READ[Authorized reads and rules]
@@ -36,6 +36,8 @@ flowchart LR
     KB -->|Retrieved reference context| O
     O -->|Typed plan and draft wording| WF
     WF --> READ --> DB
+    WF --> AMEND[Confirmed size change and revision checks]
+    AMEND --> DB
     WF --> COMP
     READ --> COMP
     API -->|Operator commands| DB
@@ -60,6 +62,7 @@ flowchart LR
 | Business workflow / legacy HTTP chat | Return rules, source errors, support persistence, older four-tool route and source renderers | [service.py](../backend/service.py) |
 | Read/rule boundary | Ownership, healthy source, validated records and exact policy version | [reads.py](../backend/reads.py), `Workflow.return_result` in [service.py](../backend/service.py) |
 | Return application | Draft states, explicit answers and final RMA submission | [returns_flow.py](../backend/returns_flow.py) |
+| Customer amendment | Owned item/size choice, explicit preview/confirmation, atomic revision + activity | [order_changes.py](../backend/order_changes.py), [store.py](../backend/store.py) |
 | Operations/persistence | Customer/order/return/ticket commands; revisions and transactions | [erp.py](../backend/erp.py), [store.py](../backend/store.py) |
 | Synchronization/evidence | Source-backed pushes, saved conversations, workspace reload and traces | [whatsapp.py](../backend/whatsapp.py), [useWorkspace.ts](../src/useWorkspace.ts) |
 
@@ -110,6 +113,8 @@ Not every phone turn invokes AI. Exact actions, social turns, menu choices and s
 - Staff and customer commands have different routes. The local operator capability is an evaluator mechanism, not real staff authentication/RBAC.
 - Return submission belongs to `ReturnFlow`; it is not a model-callable commercial action. Staff records later stages through the ERP. No carrier/payment call exists.
 - Traces/history may contain sensitive data in a real deployment. Current logging is not comprehensively redacted or immutable.
+
+Size changes and ETA-only notifications are documented in [document 20](20-delivery-and-order-actions.md). The model supplies intent; the controller supplies the exact preview, verifies consent and invokes a narrowly scoped transaction. Product size options are not a warehouse ledger.
 
 ## Proposed production integration shape
 

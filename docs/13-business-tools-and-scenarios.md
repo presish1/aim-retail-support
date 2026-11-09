@@ -4,7 +4,7 @@
 
 ## A. Current phone orchestration and legacy model tools
 
-In v0.7 the phone uses a typed Gemini support plan from [support_plan.py](../backend/support_plan.py). [support.py](../backend/support.py) runs hybrid retrieval and dispatches authorized reads or guarded workflows. The model does not emit a free-running API sequence. Its fields are intent, facets, emotion, literal item hint, guide IDs, conversational opening and closing. The server inserts factual paragraphs between them. Reported return answers and consent are parsed separately. [Document 19](19-gemini-hybrid-live-data.md) specifies the current path.
+In v0.8 the phone uses a typed Gemini support plan from [support_plan.py](../backend/support_plan.py). [support.py](../backend/support.py) runs hybrid retrieval and dispatches authorized reads or guarded workflows. The model does not emit a free-running API sequence. Its fields are intent, facets, emotion, literal item hint, guide IDs, conversational opening/closing and an optional delivery-investigation offer. The server inserts factual paragraphs between them. Reported return answers and consent are parsed separately. [Document 19](19-gemini-hybrid-live-data.md) specifies the current path.
 
 The following four model-callable schemas remain in the **legacy HTTP chat path**, not the new phone's generation contract:
 
@@ -28,13 +28,14 @@ There is no model-callable refund, pickup booking, arbitrary HTTP/SQL, image ins
 | `LiveReads.get_order` | Current purchase facts | Ownership, source/feed health, strict source schema, amounts/dates/selected consistency checks |
 | `LiveReads.get_payment` | Current payment projection | Owned order reread; optional expected revision |
 | `LiveReads.get_policy` | Bound return rules | Exact version and supported structured policy shape |
+| `LiveReads.get_product_sizes` | Size amendment choices | Healthy source; enabled SKU options, not stock or reservation |
 | `LiveReads.get_return` | Existing RMA/refund status | Owned order; return status, quantity/value and customer-safe fields |
 
 Source: [reads.py](../backend/reads.py). Audit names include `list_my_orders` and `get_return_policy`; the model does not thereby gain those internal Python methods as separate free-running tools. Current phone orchestration invokes these methods through the application controller. Guide search in [retrieval.py](../backend/retrieval.py) supplies approved explanatory text; it never establishes live order/payment state.
 
 ## C. Deterministic commands currently implemented
 
-The customer can submit a return draft explicitly. Staff can create/edit synthetic customers/orders, change fulfilment, transition returns and update support tickets. These are validated workflow/API commands, not unconstrained LLM actions. Local record changes do not call external payment or carrier systems. See [API reference](16-api-and-data-reference.md).
+The customer can submit a return draft explicitly and confirm a same-SKU size change on an owned unfulfilled order. `Store.amend_order_size` rechecks ownership, health, expected revision, fulfilment and enabled size inside a transaction; size, revision and activity commit together. [Document 20](20-delivery-and-order-actions.md) describes the preview/consent and conflict rules. Staff can create/edit synthetic customers/orders, change fulfilment, transition returns and update support tickets. These are validated workflow/API commands, not unconstrained LLM actions. Local record changes do not call external payment or carrier systems. See [API reference](16-api-and-data-reference.md).
 
 ## D. Proposed business adapters
 
@@ -89,6 +90,7 @@ Proposed outcomes include `OK`, `NOT_FOUND`, `FORBIDDEN`, `UNAVAILABLE`, `INVALI
 | Pickup request times out | **Future:** command intent + provider lookup/reconciliation | Timeout means unknown, not necessarily failed. Do not create a second pickup blindly |
 | Refund marked internally but gateway pending/failed | **Future:** mapped refund read and finance escalation | Report both states and references; no “money is in your bank” without supporting confirmation |
 | Paid but no order | **Future:** original payment/commerce mapping reads | An unmatched payment needs reconciliation; a screenshot is not authorization to create/mark a paid order |
+| Size before dispatch | **MVP:** owned order and enabled SKU-size read, exact preview and explicit confirmation | Same SKU, unchanged price/quantity; processing order/item only; configured range is not stock |
 | Exchange size | **Future:** variant read, then separate staff/customer-approved exchange/reservation | Available stock can change. No confirmed replacement before reservation/order evidence |
 | Address change after dispatch | **Future:** shipment state, carrier restrictions and authorized staff command | Identity, consent and external acceptance before claiming change |
 | Cancellation request | **MVP:** handoff; **future:** OMS cancellation eligibility/read and approved command | No model-only cancellation or refund, especially once dispatched |

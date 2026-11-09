@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
+  CalendarDays,
   ChevronDown,
   ChevronRight,
   CircleHelp,
@@ -29,6 +30,7 @@ import {
   ActivityList,
   Badge,
   ConversationView,
+  DeliveryEstimateForm,
   CustomerDetails,
   CustomerForm,
   Empty,
@@ -61,8 +63,9 @@ const NAV: { id: View; icon: typeof Package }[] = [
 ];
 type ModalState =
   | { kind: "customer"; customerId?: string }
-  | { kind: "order"; customerId?: string }
+  | { kind: "order"; customerId?: string; initialSize?: string }
   | { kind: "return"; orderId?: string }
+  | { kind: "estimate"; orderId: string }
   | { kind: "demo" }
   | null;
 function initialView(): View {
@@ -342,6 +345,7 @@ export default function App() {
             <th>Customer</th>
             <th>Payment</th>
             <th>Fulfilment</th>
+            {!compact && <th>Delivery estimate</th>}
             {!compact && <th>Items</th>}
             <th className="number">Total</th>
             <th className="erp-row-more">
@@ -421,6 +425,32 @@ export default function App() {
                     </span>
                   )}
               </td>
+              {!compact && (
+                <td>
+                  {["delivered", "returned", "cancelled"].includes(o.status) ? (
+                    <span className="erp-muted">—</span>
+                  ) : (
+                    <button
+                      className={
+                        "erp-estimate-cell " +
+                        (!o.carrier_eta_date ? "empty" : "")
+                      }
+                      aria-label={`Delivery estimate for order ${o.order_id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModal({ kind: "estimate", orderId: o.order_id });
+                      }}
+                    >
+                      <CalendarDays size={14} />
+                      <span>
+                        {o.carrier_eta_date
+                          ? day(o.carrier_eta_date)
+                          : "Set estimate"}
+                      </span>
+                    </button>
+                  )}
+                </td>
+              )}
               {!compact && (
                 <td className="erp-muted">
                   {o.items.reduce((n, i) => n + i.quantity, 0)}{" "}
@@ -1571,9 +1601,11 @@ export default function App() {
                 : "Add customer"
               : modal.kind === "order"
                 ? "Create order"
-                : modal.kind === "return"
-                  ? "Create return"
-                  : "Demo tools"
+                : modal.kind === "estimate"
+                  ? "Delivery estimate · #" + modal.orderId
+                  : modal.kind === "return"
+                    ? "Create return"
+                    : "Demo tools"
           }
           close={() => setModal(null)}
           wide={modal.kind === "order"}
@@ -1602,10 +1634,30 @@ export default function App() {
               }}
             />
           )}
+          {modal.kind === "estimate" &&
+            data.orders.find((o) => o.order_id === modal.orderId) && (
+              <DeliveryEstimateForm
+                key={modal.orderId}
+                order={data.orders.find((o) => o.order_id === modal.orderId)!}
+                demoNow={data.settings.demo_now}
+                close={() => setModal(null)}
+                save={async (body) => {
+                  const result = await mutate<{ order: Order }>(
+                    "/orders/" + modal.orderId,
+                    "PATCH",
+                    body,
+                  );
+                  setModal(null);
+                  notify("Delivery estimate saved");
+                  return result.order;
+                }}
+              />
+            )}
           {modal.kind === "order" && (
             <NewOrderForm
               data={data}
               customerId={modal.customerId}
+              initialSize={modal.initialSize}
               close={() => setModal(null)}
               submit={async (body) => {
                 const o = await mutate<Order>("/orders", "POST", body);
@@ -1645,6 +1697,10 @@ export default function App() {
                   </li>
                   <li>Select order #4812, then change its status here.</li>
                   <li>
+                    Use its Delivery estimate cell to change the date, then ask
+                    “When will it arrive?” in chat.
+                  </li>
+                  <li>
                     The chat receives the saved order update automatically.
                   </li>
                 </ol>
@@ -1679,6 +1735,25 @@ export default function App() {
                     Create an order
                     <small>
                       New purchases appear on the customer's account.
+                    </small>
+                  </span>
+                  <ChevronRight size={15} />
+                </button>
+                <button
+                  onClick={() =>
+                    setModal({
+                      kind: "order",
+                      customerId: "demo-customer-a",
+                      initialSize: "S",
+                    })
+                  }
+                >
+                  <ShoppingBag size={18} />
+                  <span>
+                    Prepare a size-change demo
+                    <small>
+                      Create an unfulfilled S order for Aarav. Ask to change it
+                      to M in chat.
                     </small>
                   </span>
                   <ChevronRight size={15} />

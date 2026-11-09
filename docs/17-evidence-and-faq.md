@@ -1,6 +1,6 @@
 # 17 — Evidence, presentation claims and FAQ
 
-**Purpose:** defend the MVP without overstating it. Current **v0.7**, reviewed 8 November 2026; backend suite: **165 cases**. Gemini generation/embeddings, hybrid RAG and mutable local database reads are implemented. Real retailer, WhatsApp, courier and payment integrations remain future work.
+**Purpose:** defend the MVP without overstating it. Current **v0.8**, reviewed 9 November 2026; backend suite: **200 cases**. Gemini generation/embeddings, hybrid RAG and mutable local database reads are implemented. Real retailer, WhatsApp, courier and payment integrations remain future work.
 
 ## What is verified and where?
 
@@ -12,8 +12,9 @@
 | Bad source data, unsupported model reference, evidence/photo validation, explicit submission and transaction rollback | [test_grounding.py](../backend/tests/test_grounding.py) | Defined adversarial/workflow/transaction cases |
 | Focused follow-ups, compound questions, return interruptions/corrections, negation, RAG refresh/provenance, checked model wording and fallback | [test_support.py](../backend/tests/test_support.py) | Defined conversation and composition boundaries; many cases deliberately use model doubles |
 | Current provider and retrieval contracts | [test_gemini_rag.py](../backend/tests/test_gemini_rag.py) | Native payload/usage, secret-safe errors, incomplete output, vector integrity, cache invalidation and fallback; no paid unit-test calls |
-| Current authored conversations | [runner](../evaluation/run_conversations.py), [cases](../evaluation/conversation_cases.json), [v0.7 Gemini result](../evaluation/results/v07-gemini-conversations.json) | 18 scenarios per mode, including exact estimate/tracking updates in temporary databases |
-| Retrieval comparison | [runner](../evaluation/run_retrieval.py), [queries](../evaluation/retrieval_cases.json), [v0.7 result](../evaluation/results/v07-retrieval.json) | 12 authored queries, acceptable-reference hit at rank 4; development evidence |
+| Customer size-change transaction and consent | [test_order_changes.py](../backend/tests/test_order_changes.py) | Preview before write, expiry, account/item isolation, fulfilment/revision races, rollback, repeated/concurrent confirmation |
+| Current authored conversations | [runner](../evaluation/run_conversations.py), [cases](../evaluation/conversation_cases.json), [v0.8 Gemini result](../evaluation/results/v08-gemini-conversations.json) | 26 scenarios per mode, including live estimate changes, accepted offers, confirmed/cancelled size edits and stale consent in temporary databases |
+| Retrieval comparison | [runner](../evaluation/run_retrieval.py), [queries](../evaluation/retrieval_cases.json), [v0.8 result](../evaluation/results/v08-retrieval.json) | 14 authored queries, acceptable-reference hit at rank 4; development evidence |
 | Historical v0.6 conversations | [Qwen result](../evaluation/results/v06-conversations.json) | 16 prior authored scenarios; current model is Gemini |
 | Historical UI demonstrations | [screens and flow](10-grounded-india-returns.md), [ERP screen](../design/erp-dashboard.png), [phone screen](../design/whatsapp-phone-only.png) | Recorded local UI behavior and source-backed Qwen demo; screenshots alone are not automated assertions |
 | Historical real model/rules smoke | [v0.2 result](../evaluation/results/local-qwen3-smoke.json), [runner](../evaluation/run_smoke.py) | Twelve authored scenarios per mode on a prior version; integration evidence only |
@@ -21,7 +22,17 @@
 
 Run `npm test` to reproduce the backend suite and `npm run build` to check the frontend build. Model smoke requires the configured real model. Tests use temporary databases; do not reset the shared demonstration workspace to run them. See [README](../README.md) for setup.
 
-## Current v0.7 results
+## Current v0.8 results
+
+**200 backend cases and the production build pass.** The [recorded conversation run](../evaluation/results/v08-gemini-conversations.json) passed **26/26 authored scenarios in each mode**, 84 turns per mode. The JSON records actual model/system mode, retrieval, reads and composition per turn. Some replies use checked generated wording; rejected wordings use the source renderer. Selection, workflow questions, failures and action receipts retain guarded renderers. These are development regressions, not a measured customer-resolution rate.
+
+New cases cover accepted/declined delivery investigation, an estimate cleared to unknown, actual confirmed S → M persistence, cancellation without a write, stale preview requiring fresh consent, a shipped item routed to review, and a size follow-up that retains the selected purchase when the customer owns two hoodies. The runner checks the database item and actual activity-write count, not just whether the bot says success. Backend tests additionally exercise cross-account denial, disabled options, concurrent confirmations, audit rollback, expiry and an unrelated return draft.
+
+The [retrieval run](../evaluation/results/v08-retrieval.json) over the 26-passage `threadline-support-v2` corpus recorded **13/14 lexical hits and 14/14 hybrid hits** at rank four, with no semantic fallback. Two new queries concern an unfulfilled size amendment. This is authored development evidence, not an unseen benchmark.
+
+Browser checks created one new S order through Demo tools, confirmed S → M in chat and observed the open ERP drawer update to M without a manual refresh. They also set/cleared/restored its delivery date, observed scoped concise notifications and checked a later real-model reply against the saved date. Screens: [size change](../design/whatsapp-size-change.png), [estimate editor](../design/erp-delivery-estimate.png). The shared pre-existing orders were not reset for testing. [Document 20](20-delivery-and-order-actions.md) explains the feature boundaries and rehearsal steps.
+
+## Historical v0.7 results
 
 **165 backend cases and the production build pass.** The [recorded conversation run](../evaluation/results/v07-gemini-conversations.json) passed 18/18 authored scenarios in each mode, 57 turns per mode. The Gemini run used 41 real generation calls with hybrid retrieval, 16 zero-generation system turns, no generation-outage fallback and no semantic-retrieval fallback. Ten replies used accepted generated language; three generated wordings were rejected and source-rendered. Other turns intentionally used guarded intake, selection, handoff or failure renderers. Median model-turn time was 3,283 ms; nearest-rank p95 4,464 ms, including query retrieval/reads with the document cache already built. This is one local development run, not a comparative speed claim or production SLA.
 
@@ -53,7 +64,8 @@ Still unverified: a real retailer/Meta/courier/gateway/helpdesk connection; comp
 | --- | --- |
 | Answers use live data | Demonstrated with current mutable synthetic SQLite records behind an API |
 | Factual invention is constrained | Current validated paragraphs, targeted prose checks and fallback constrain specified unsupported claims; qualitative errors remain possible |
-| The support uses RAG | Implemented BM25 + Gemini embeddings/rank fusion over 25 approved passages, separate from live order reads |
+| The support uses RAG | Implemented BM25 + Gemini embeddings/rank fusion over 26 approved passages, separate from live order reads |
+| A customer can change size | Implemented confirmed same-SKU change on an owned unfulfilled order; current options/revision/status checks, atomic size/activity save; not a stock reservation |
 | The model was fine-tuned | Outside current scope; no weight training is implemented |
 | The system is completely safe | Unsupported; describe specific controls and the remaining MVP gaps |
 | Gemini is the best model | Unsupported; it is the current configured provider, not a benchmark winner |
@@ -72,6 +84,8 @@ Still unverified: a real retailer/Meta/courier/gateway/helpdesk connection; comp
 **Did we fine-tune the model?** Fine-tuning is outside current scope. The implemented project is Gemini + hybrid RAG + current database reads and guarded workflows. Earlier training material is historical, not a running feature.
 
 **Can the model read the whole database?** No generic database/SQL tool is exposed. The workflow executes named reads with server-bound identity. That does not make the demo's identity shortcuts production-safe.
+
+**Can the customer change size?** Yes, on an owned unfulfilled order after an exact preview and confirmation. The application rechecks current state and revision and saves size plus activity atomically. Shipped items go to store review; offered sizes are not stock. See [document 20](20-delivery-and-order-actions.md).
 
 **Can a hallucinated tool issue money?** The model has no refund tool or gateway credentials. Staff can only record a synthetic refund through guarded routes. Production payment execution would require a separate approved integration.
 

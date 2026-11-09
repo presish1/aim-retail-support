@@ -1,7 +1,7 @@
 # Threadline
 ### Order & returns support, grounded in the order system
 
-**AI in Management · MBA · Scenario A · Working prototype v0.7 · 8 November 2026**
+**AI in Management · MBA · Scenario A · Working prototype v0.8 · 9 November 2026**
 
 > Recommend a small, supervised AI service that answers routine post-purchase questions using current order records, checks return eligibility with explicit business rules, and hands exceptions to a person with the context attached.
 
@@ -29,6 +29,12 @@ Saving a selected order's status, carrier estimate, or tracking details sends a 
 
 ![Gemini customer conversation with current tracking data](design/whatsapp-gemini-support.png)
 
+## Customer changes and delivery estimates
+
+Ask “I ordered S but need M for order [ID].” The service reads the owned unfulfilled purchase and configured size options, shows an exact preview, and saves only after confirmation. The size, revision and audit record commit together; the open ERP refreshes automatically. Shipped items go to store review. Use **Demo tools → Prepare a size-change demo** to create an S order for Aarav.
+
+In Orders, click the **Delivery estimate** date to set or clear it. Eligible connected chats receive a short update, and the next question reads the saved date. Presets use the displayed store demo clock. [Read the flow, limits and demo steps](docs/20-delivery-and-order-actions.md).
+
 ## India store and guided returns
 
 Catalogue prices are illustrative INR prices; policy and delivery dates use IST. Customer replies include product photographs, order details, payment status, and useful reply buttons. Return intake collects the item, reason, condition, tags, optional photos, quantity, pickup address and preferred window, then asks for explicit submission. The ERP continues through approval, carrier booking, receipt, inspection and recorded refund. No carrier booking or payment is executed.
@@ -37,7 +43,7 @@ The [return design and read contracts](docs/10-grounded-india-returns.md) explai
 
 ## Conversational support and RAG
 
-The phone uses **Gemini 3.8 Flash** with a versioned, 25-passage support corpus. **Hybrid RAG combines BM25, Gemini embeddings and reciprocal-rank fusion** to find relevant explanations. General help needs no email; the controller keeps the account, purchase and return step in context.
+The phone uses **Gemini 3.8 Flash** with a versioned, 26-passage support corpus. **Hybrid RAG combines BM25, Gemini embeddings and reciprocal-rank fusion** to find relevant explanations. General help needs no email; the controller keeps the account, purchase and return step in context.
 
 Current order facts come from fresh authorized reads and locked factual paragraphs. Generated wording is checked before use; rejected wording falls back to the approved/source renderer. Return submission and staff decisions remain guarded workflows. ERP Conversations shows the intent, guidance, reads and actual model/fallback behavior.
 
@@ -130,6 +136,7 @@ The phone model produces a typed intent, requested details, guidance IDs and con
 | [API and data reference](docs/16-api-and-data-reference.md) | Implemented endpoints, WebSocket protocol, records and configuration |
 | [Evidence and FAQ](docs/17-evidence-and-faq.md) | What the tests demonstrate, untested areas and presentation answers |
 | [Gemini, hybrid RAG and live data](docs/19-gemini-hybrid-live-data.md) | Current pipeline, embeddings/cache, exact database reads, grounding and evidence |
+| [Delivery and customer order changes](docs/20-delivery-and-order-actions.md) | Confirmed S → M changes, live estimates, conversation, transactions and demo steps |
 | [Documentation map and history](docs/README.md) | Reading paths and earlier definition, model, business-case and design notes |
 | [Sources](docs/sources.md) | Primary references checked for the model and deployment discussion |
 | [Demo data](data/README.md) | Eight synthetic customers, fourteen sample orders, an illustrative policy, and a fixed demo clock |

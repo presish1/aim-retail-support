@@ -7,6 +7,8 @@ All records are fictional and contain no customer contact information. JSON seed
 - `demo-config.json`: fixed demo clock, business timezone, source-health settings.
 - `orders.json`: 14 orders, including one belonging to a different simulated customer.
 - `return-policy.json`: illustrative rules for initial return eligibility.
+- `product-sizes.json`: configured enabled size options per SKU, seeded into SQLite; not stock counts or reservations.
+- `support-guides.json`: 26 approved RAG passages, `threadline-support-v2`; operational customer/order facts are excluded.
 - `customers.json`: fictional checkout email/phone mappings for the WhatsApp-style conversation. Emails use example.com. Phone numbers and Indian names/cities are synthetic demo fixtures; no SMS is sent. Default contact matching simplifies the demo and is not real authentication; an optional local code challenge is available.
 
 At the fixed clock, customer `demo-customer-a` owns orders 4812–4816. Customer `demo-customer-b` owns 4901. Customer A must not discover B's record through a guessed number.
@@ -27,3 +29,5 @@ The delivery ETA is an estimate. Null means unavailable. A current fetch timesta
 Tracking links are null in the seed data. Suppress the tracking button unless the backend returns a validated URL or a functioning local demo route has been implemented. Conversation examples show the intended richer experience when such links exist. Return-portal links also require an explicitly configured destination before displaying an active action.
 
 Catalogue prices are selected INR demo prices, not an FX conversion. The India migration preserves saved statuses and operational edits while relocating the original synthetic samples. Guided return submission and real local photo uploads are described in [the v0.5 design](../docs/10-grounded-india-returns.md).
+
+For a customer size-change rehearsal, **Demo tools → Prepare a size-change demo** prefills a new S order for Aarav; review and create it, then use its generated ID in chat. This does not alter the fourteen source fixtures. [Delivery and order-action guide](../docs/20-delivery-and-order-actions.md).

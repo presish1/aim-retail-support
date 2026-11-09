@@ -27,6 +27,7 @@ class Store:
               CREATE TABLE IF NOT EXISTS returns (id TEXT PRIMARY KEY, record TEXT NOT NULL);
               CREATE TABLE IF NOT EXISTS activity (id TEXT PRIMARY KEY, record TEXT NOT NULL);
               CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, path TEXT NOT NULL);
+              CREATE TABLE IF NOT EXISTS product_sizes (sku TEXT NOT NULL, size TEXT NOT NULL, enabled INTEGER NOT NULL CHECK(enabled IN (0,1)), PRIMARY KEY(sku,size));
             """)
         if self.setting("demo_now") is None:
             self.reset()
@@ -55,6 +56,7 @@ class Store:
                 self.save_order(record)
         from .region import migrate
         migrate(self, ROOT)
+        self.seed_sizes()
 
     def seed_customers(self):
         customers = json.loads((ROOT / "data/customers.json").read_text())
@@ -84,7 +86,7 @@ class Store:
         policy = json.loads((ROOT / "data/return-policy.json").read_text())
         orders = json.loads((ROOT / "data/orders.json").read_text())
         with self.connect() as db:
-            for table in ("settings", "orders", "tickets", "traces", "customers", "channel_sessions", "returns", "activity", "media"):
+            for table in ("settings", "orders", "tickets", "traces", "customers", "channel_sessions", "returns", "activity", "media", "product_sizes"):
                 db.execute(f"DELETE FROM {table}")  # fixed internal identifiers
             db.execute("UPDATE sessions SET history='[]'")
             for name, value in {**config, "policy": policy, "ticket_store_available": True, "verification_mode": "demo_match", "inference_mode": "model"}.items():
@@ -92,6 +94,7 @@ class Store:
             for order in orders:
                 db.execute("INSERT INTO orders VALUES (?,?,?)", (order["order_id"], order["customer_id"], json.dumps(order)))
         self.seed_customers()
+        self.seed_sizes()
 
     def customer(self, customer_id):
         with self.connect() as db:
@@ -282,3 +285,91 @@ class Store:
             db.execute("INSERT OR IGNORE INTO tickets VALUES (?,?,?,?)", (ticket["id"], session_id, dedup_key, json.dumps(ticket)))
             row = db.execute("SELECT record FROM tickets WHERE dedup_key=?", (dedup_key,)).fetchone()
         return json.loads(row[0])
+
+    def seed_sizes(self):
+        source = json.loads((ROOT / "data/product-sizes.json").read_text())
+        with self.connect() as db:
+            for sku, sizes in source["products"].items():
+                db.executemany(
+                    "INSERT OR IGNORE INTO product_sizes VALUES (?,?,1)",
+                    [(sku, size) for size in sizes],
+                )
+
+    def product_sizes(self, sku):
+        with self.connect() as db:
+            rows = db.execute(
+                "SELECT size FROM product_sizes WHERE sku=? AND enabled=1 ORDER BY rowid",
+                (sku,),
+            ).fetchall()
+        return [row[0] for row in rows]
+
+    def amend_order_size(
+        self, customer_id, order_id, item_id, target_size, expected_revision
+    ):
+        """Customer-authorized same-SKU amendment; order + audit commit atomically."""
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT record FROM orders WHERE id=? AND customer=?",
+                (order_id, customer_id),
+            ).fetchone()
+            if not row:
+                raise KeyError("inaccessible_order")
+            before = json.loads(row[0])
+            after = json.loads(row[0])
+            # Recheck source controls under the same transaction lock as the write.
+            controls = {
+                r[0]: json.loads(r[1])
+                for r in db.execute(
+                    "SELECT name,value FROM settings WHERE name IN ('order_api_available','feed_health')"
+                )
+            }
+            if (
+                not controls.get("order_api_available")
+                or controls.get("feed_health") != "healthy"
+            ):
+                raise ValueError("source_unavailable")
+            if before.get("revision", 1) != expected_revision:
+                raise ValueError("revision_conflict")
+            item = next((i for i in after["items"] if i["item_id"] == item_id), None)
+            if not item:
+                raise KeyError("inaccessible_item")
+            if (
+                after["status"] != "processing"
+                or item["status"] != "processing"
+                or item.get("delivered_at")
+                or item.get("returned")
+            ):
+                raise ValueError("already_fulfilling")
+            if not db.execute(
+                "SELECT 1 FROM product_sizes WHERE sku=? AND size=? AND enabled=1",
+                (item.get("sku"), target_size),
+            ).fetchone():
+                raise ValueError("unsupported_size")
+            if item.get("size") == target_size:
+                raise ValueError("already_selected")
+            old = item.get("size", "")
+            item["size"] = target_size
+            now = datetime.now(timezone.utc).isoformat()
+            after.update(revision=before.get("revision", 1) + 1, source_updated_at=now)
+            db.execute(
+                "UPDATE orders SET record=? WHERE id=?", (json.dumps(after), order_id)
+            )
+            entry = {
+                "id": "ACT-" + uuid.uuid4().hex[:10],
+                "at": now,
+                "entity": "order",
+                "entity_id": order_id,
+                "action": "size_changed",
+                "summary": f"Order #{order_id}: {item['name']} size {old} → {target_size}",
+                "actor": "Customer chat · " + customer_id,
+                "changes": {
+                    "item_id": item_id,
+                    "size": {"before": old, "after": target_size},
+                    "revision": after["revision"],
+                },
+            }
+            db.execute(
+                "INSERT INTO activity VALUES (?,?)", (entry["id"], json.dumps(entry))
+            )
+        return before, after

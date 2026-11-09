@@ -1,6 +1,6 @@
 # 19 — Gemini, hybrid RAG and live operational data
 
-**Current MVP v0.7 · 8 November 2026.** This supersedes the v0.6 model/retrieval settings. Fine-tuning is outside the current scope; no weights or adapters are trained. The implementation uses Gemini generation, a real semantic/lexical retrieval pipeline, authorized current database reads, guarded return workflows and inspectable evidence.
+**Current MVP v0.8 · 9 November 2026.** This supersedes the v0.6 model/retrieval settings. Fine-tuning is outside the current scope; no weights or adapters are trained. The implementation uses Gemini generation, a real semantic/lexical retrieval pipeline, authorized current database reads, guarded return/size-change workflows and inspectable evidence.
 
 ## Presentation explanation
 
@@ -52,7 +52,7 @@ flowchart TD
 
 ## The RAG pipeline
 
-1. **Approved corpus:** 25 passages in [support-guides.json](../data/support-guides.json), with ID, title, topic, query terms and customer-facing explanation. No customer order, transcript or upload is indexed.
+1. **Approved corpus:** 26 passages in [support-guides.json](../data/support-guides.json), with ID, title, topic, query terms and customer-facing explanation. No customer order, transcript or upload is indexed.
 2. **Document embeddings:** `gemini-embedding-001` creates 768-dimensional vectors for the passages using `RETRIEVAL_DOCUMENT`. Vectors are normalized and cached under ignored `artifacts/local/retrieval/`.
 3. **Cache identity:** corpus digest, embedding-model ID and dimension form the cache key. Document IDs/count/dimensions and finite values are checked before reuse. A guide edit causes re-embedding; incompatible model spaces are not mixed.
 4. **Query preparation:** email-like strings and numeric identifiers are masked before a `RETRIEVAL_QUERY` embedding. Query text/vectors are used for that request and are not stored in the document index. This is limited masking, not comprehensive PII scrubbing.
@@ -63,7 +63,7 @@ flowchart TD
 9. **Answer selection:** the controller can also fetch a required approved passage by topic/ID after planning. The trace distinguishes planning passages from final answer sources; this is not an autonomous model tool loop.
 10. **Failure:** if semantic retrieval fails, an explicit trace flag records lexical-only retrieval. If the corpus changes during embedding, old vectors are not fused with new passages. If generation fails, labeled rules fallback uses the same live-data controls.
 
-This is a small vector index implemented directly in Python over 25 passages. A vector database service would add infrastructure without improving the demonstration by itself. The corpus/version/provenance boundaries are the important design choices; a larger deployment may replace the storage implementation after measurement.
+This is a small vector index implemented directly in Python over 26 passages. A vector database service would add infrastructure without improving the demonstration by itself. The corpus/version/provenance boundaries are the important design choices; a larger deployment may replace the storage implementation after measurement.
 
 ## The database is the source of operational truth
 
@@ -75,6 +75,7 @@ RAG explains policy and process. These named reads establish the supported opera
 | `get_order` | Current owned record, healthy source/feed, strict schema, dates, amounts and selected consistency checks |
 | `get_payment` | Current payment projection with the expected order revision |
 | `get_policy` | Exact applicable structured policy version; numeric return window and IST calculations |
+| `get_product_sizes` | Healthy source; enabled size options for the exact SKU, not stock availability |
 | `get_return` | Owned RMA, status, quantity/value and customer-safe public projection |
 
 These are application-controlled functions in [reads.py](../backend/reads.py), not arbitrary model-generated SQL. The database schema and routes remain documented in [document 16](16-api-and-data-reference.md).
@@ -89,7 +90,7 @@ The controller determines the requested factual paragraphs and inserts them betw
 
 The compiler checks unknown/unrequested references, missing required facts, supplied-guide provenance, unprotected numbers/links/status claims, specified action confirmations, positive guarantees, invented causes, sensitive-data requests and leaked internal instructions. Failed checks use approved/source-rendered text and record the reason. Return questions/action confirmations intentionally use the guarded workflow renderer.
 
-The model cannot execute a refund, reserve inventory, book a carrier or modify an order. These remain outside the model's authority. Staff records synthetic lifecycle stages after the existing checks. No carrier/payment command is executed.
+The model cannot execute a refund, reserve inventory, book a carrier or directly modify an order. The controller now permits a customer-confirmed same-SKU size change on an owned unfulfilled order, with current reads, a revision-bound preview and an atomic size/activity transaction. [Document 20](20-delivery-and-order-actions.md) specifies this narrow action boundary. Staff records synthetic lifecycle stages after the existing checks. No carrier/payment command is executed.
 
 **Remaining risk:** a model can misunderstand the issue or add an unsupported qualitative statement that the checks miss; a guide, operator or upstream source can be wrong. Neither RAG nor a stronger model establishes zero hallucinations or total security. Current demo identity, media/log retention and event-delivery gaps remain in [the safety case](11-grounding-and-safety.md).
 
@@ -122,9 +123,9 @@ npm run build
 .venv/bin/python evaluation/run_retrieval.py --output artifacts/local/retrieval.json
 ```
 
-The conversation suite includes real Gemini calls plus controlled temporary database mutations: changed estimates/tracking, source outage, account isolation, compound factual questions and return interruptions. The retrieval runner separately compares lexical versus hybrid retrieval over 12 authored queries. Unit tests exercise provider errors, incomplete/invalid output, secret-safe failures, cache invalidation, corpus changes and fallback without making paid calls.
+The conversation suite includes real Gemini calls plus controlled temporary database mutations: changed estimates/tracking, source outage, account isolation, compound factual questions and return interruptions. The retrieval runner separately compares lexical versus hybrid retrieval over 14 authored queries. Unit tests exercise provider errors, incomplete/invalid output, secret-safe failures, cache invalidation, corpus changes and fallback without making paid calls.
 
-These are authored development regressions, not unseen accuracy or proof of a “100x” improvement. [The evidence register](17-evidence-and-faq.md) records actual results and limits. Real test reports are in [Gemini conversations](../evaluation/results/v07-gemini-conversations.json) and [retrieval comparison](../evaluation/results/v07-retrieval.json). The older Qwen results remain labeled historical.
+These are authored development regressions, not unseen accuracy or proof of a “100x” improvement. [The evidence register](17-evidence-and-faq.md) records actual results and limits. Real test reports are in [Gemini conversations](../evaluation/results/v08-gemini-conversations.json) and [retrieval comparison](../evaluation/results/v08-retrieval.json). The older Qwen results remain labeled historical.
 
 ERP Conversations now shows the actual inference model, retrieval method/embedding model, source guide IDs, order revision, fetch time, named reads and composition decisions. These are useful presentation evidence for explaining the system beyond a chat screen.
 

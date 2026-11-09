@@ -1,10 +1,10 @@
 # 11 — Grounding and safety case
 
-**Scope:** MVP v0.7, not a production assurance certificate. The [presentation briefing](PRESENTATION_BRIEF.md) provides slide wording; [document 19](19-gemini-hybrid-live-data.md) specifies current Gemini/RAG/live reads. Grounding, authorization, operational integrity and security are separate concerns.
+**Scope:** MVP v0.8, not a production assurance certificate. The [presentation briefing](PRESENTATION_BRIEF.md) provides slide wording; [document 19](19-gemini-hybrid-live-data.md) specifies current Gemini/RAG/live reads. Grounding, authorization, operational integrity and security are separate concerns.
 
 ## The central control
 
-Gemini can write conversational opening/closing text and general explanations from approved retrieved passages. The controller chooses factual paragraphs, inserts them between those parts and checks the prose. Backend code resolves the customer/reference, reads current sources, validates fields, calculates rules and controls writes. Action confirmations, return state questions and notifications use guarded source renderers. The legacy HTTP route retains four tool contracts.
+Gemini can write conversational opening/closing text and general explanations from approved retrieved passages. The controller chooses factual paragraphs, inserts them between those parts and checks the prose. Backend code resolves the customer/reference, reads current sources, validates fields, calculates rules and controls writes. Action confirmations, exact return state questions and notifications use guarded source renderers. The legacy HTTP route retains four tool contracts.
 
 This constrains a major route to hallucination: normal factual blocks contain server-supplied dates, amounts and statuses; targeted generated-text checks reject specified unsupported values/claims. It does not prove semantic correctness of every qualitative explanation, correct intent or correct source data. Rejected wording uses approved/source fallback and records why.
 
@@ -27,11 +27,15 @@ This constrains a major route to hallucination: normal factual blocks contain se
 | False return/refund value | Return quantity/value checked against purchased item price; transaction validates before ledger update | Real tax, discounts, fees, multiple partial returns and payment allocation need richer production rules |
 | False photo verification | The reply says evidence was received, not assessed; staff inspection gate | A photo can be misleading; file validation is not fraud detection |
 | Duplicate or premature action | Explicit customer submission, transaction-level active-RMA deduplication, allowed staff transitions, inspection/reference gates | No external provider command or reconciliation is implemented |
+| Unconfirmed/stale size edit | Customer-supplied destination, exact preview, explicit consent, ten-minute expiry, transaction rechecks ownership/health/revision/processing/size options | Demo identity is not real authentication; configured options are not stock; real fulfilment cutoff needs an OMS integration |
+| Size save without audit / duplicate confirmation | Size + revision + activity commit atomically; a second confirmation cannot apply the same expected revision | Socket notification is separate; other workflows have different transaction coverage |
 | Failed write reported as success | Guarded ticket/RMA paths report persisted outcomes; failed ticket storage has a failure reply | Audit, business changes and notifications are not universally one atomic operation |
 | Lost staff edit | UI supplies revision/update time; order revision and return transaction comparisons reject stale writes | Optional version fields can be omitted by API clients; this is not a complete production concurrency/security policy |
 | Internal notes exposed in phone response | Customer projection excludes order notes; return reply uses explicit public fields; phone socket payload excludes trace | Other endpoints and logs contain operational data; route-specific controls must be assessed separately |
 
 Primary implementation: [support controller](../backend/support.py), [typed model turn](../backend/support_plan.py), [retrieval](../backend/retrieval.py), [reply compiler](../backend/composition.py), [reads](../backend/reads.py), [workflow](../backend/service.py), [return intake](../backend/returns_flow.py), [store transactions](../backend/store.py), [ERP commands](../backend/erp.py).
+
+Customer size amendment details and tests are in [document 20](20-delivery-and-order-actions.md) and [test_order_changes.py](../backend/tests/test_order_changes.py). Acknowledging a customer-supplied deadline does not authorize a delivery promise.
 
 ## Prompt injection and model failure
 

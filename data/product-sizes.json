@@ -1,0 +1,13 @@
+{
+  "version": "demo-size-options-v1",
+  "note": "Offered product sizes for the synthetic catalogue; not warehouse stock or reservations.",
+  "products": {
+    "TL-HOOD-01": ["XS", "S", "M", "L", "XL"],
+    "TL-OXFD-02": ["XS", "S", "M", "L", "XL"],
+    "TL-CHIN-03": ["28", "30", "32", "34", "36"],
+    "TL-TEE-04": ["XS", "S", "M", "L", "XL"],
+    "TL-CARD-05": ["XS", "S", "M", "L", "XL"],
+    "TL-OVER-06": ["XS", "S", "M", "L", "XL"],
+    "TL-JACK-07": ["XS", "S", "M", "L", "XL"]
+  }
+}

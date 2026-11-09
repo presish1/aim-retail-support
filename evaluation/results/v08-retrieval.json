@@ -1,0 +1,391 @@
+{
+  "kind": "authored_retrieval_regression_not_holdout",
+  "at": "2026-11-09T07:37:09.755314+00:00",
+  "guide_digest": "b2460e3dfba1",
+  "embedding_model": "gemini-embedding-001",
+  "k": 4,
+  "summary": {
+    "cases": 14,
+    "bm25_hits": 13,
+    "hybrid_hits": 14,
+    "semantic_fallbacks": 0
+  },
+  "limitations": "Authored development checks; any acceptable reference in top 4 counts as a hit. No unseen benchmark or customer outcome claim.",
+  "results": [
+    {
+      "query": "I sliced off the little label hanging from the shirt. Does the courier pouch matter?",
+      "expected": [
+        "garment_tags"
+      ],
+      "bm25_top4": [
+        "garment_tags",
+        "damaged_item",
+        "split_delivery",
+        "catalog_limits"
+      ],
+      "hybrid_top4": [
+        "garment_tags",
+        "damaged_item",
+        "split_delivery",
+        "preparing_order"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "The wedding is this weekend. Is your arrival day a promise?",
+      "expected": [
+        "eta_explained"
+      ],
+      "bm25_top4": [
+        "eta_explained",
+        "late_delivery",
+        "pickup_preference",
+        "exchange_size"
+      ],
+      "hybrid_top4": [
+        "eta_explained",
+        "late_delivery",
+        "pickup_preference",
+        "refund_timing"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "How long before the money lands back with my bank?",
+      "expected": [
+        "refund_timing"
+      ],
+      "bm25_top4": [
+        "refund_timing",
+        "return_steps",
+        "return_policy",
+        "payment_help"
+      ],
+      "hybrid_top4": [
+        "refund_timing",
+        "return_steps",
+        "return_policy",
+        "payment_help"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "I only slipped it on for a fit check. Is that the same as using it?",
+      "expected": [
+        "try_on"
+      ],
+      "bm25_top4": [
+        "try_on",
+        "split_delivery",
+        "source_unavailable",
+        "order_size_change"
+      ],
+      "hybrid_top4": [
+        "try_on",
+        "split_delivery",
+        "exchange_size",
+        "order_size_change"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "I don't want to pay a surprise collection fee.",
+      "expected": [
+        "return_cost"
+      ],
+      "bm25_top4": [
+        "cancel_order",
+        "return_cost",
+        "pickup_preference",
+        "change_address"
+      ],
+      "hybrid_top4": [
+        "return_cost",
+        "pickup_preference",
+        "cancel_order",
+        "payment_help"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "Can I show you the torn seam in a picture?",
+      "expected": [
+        "return_photos",
+        "damaged_item"
+      ],
+      "bm25_top4": [
+        "return_photos",
+        "damaged_item",
+        "catalog_limits",
+        "garment_tags"
+      ],
+      "hybrid_top4": [
+        "return_photos",
+        "damaged_item",
+        "garment_tags",
+        "catalog_limits"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "After I press submit, is someone already coming to collect it?",
+      "expected": [
+        "return_steps",
+        "pickup_preference"
+      ],
+      "bm25_top4": [
+        "support_team",
+        "return_steps",
+        "delivery_dispute"
+      ],
+      "hybrid_top4": [
+        "return_steps",
+        "support_team",
+        "delivery_dispute",
+        "pickup_preference"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "Why can't you just find it from the number on my receipt?",
+      "expected": [
+        "identity_reason"
+      ],
+      "bm25_top4": [
+        "identity_reason",
+        "return_photos",
+        "tracking_help",
+        "payment_help"
+      ],
+      "hybrid_top4": [
+        "identity_reason",
+        "payment_help",
+        "tracking_help",
+        "source_unavailable"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "Swap the medium for a large. Can you hold one aside?",
+      "expected": [
+        "exchange_size"
+      ],
+      "bm25_top4": [
+        "order_size_change",
+        "exchange_size",
+        "split_delivery"
+      ],
+      "hybrid_top4": [
+        "exchange_size",
+        "order_size_change",
+        "split_delivery",
+        "change_address"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "Can the destination be corrected once it has left your warehouse?",
+      "expected": [
+        "change_address"
+      ],
+      "bm25_top4": [
+        "order_size_change"
+      ],
+      "hybrid_top4": [
+        "order_size_change",
+        "change_address",
+        "cancel_order",
+        "split_delivery"
+      ],
+      "bm25_hit": false,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "Cash left my bank but nothing appears on the orders page.",
+      "expected": [
+        "payment_help"
+      ],
+      "bm25_top4": [
+        "payment_help",
+        "refund_timing",
+        "delivery_dispute",
+        "pickup_preference"
+      ],
+      "hybrid_top4": [
+        "payment_help",
+        "refund_timing",
+        "delivery_dispute",
+        "cancel_order"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "Which detergent and wash temperature should I use for that knit?",
+      "expected": [
+        "catalog_limits"
+      ],
+      "bm25_top4": [
+        "try_on",
+        "exchange_size",
+        "return_policy",
+        "catalog_limits"
+      ],
+      "hybrid_top4": [
+        "catalog_limits",
+        "try_on",
+        "exchange_size",
+        "return_policy"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "I bought a small hoodie but need medium before it ships. Can I amend the same order?",
+      "expected": [
+        "order_size_change"
+      ],
+      "bm25_top4": [
+        "order_size_change",
+        "try_on",
+        "return_photos",
+        "payment_help"
+      ],
+      "hybrid_top4": [
+        "order_size_change",
+        "try_on",
+        "cancel_order",
+        "preparing_order"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    },
+    {
+      "query": "You showed S to M. If I confirm will it actually save my new size?",
+      "expected": [
+        "order_size_change"
+      ],
+      "bm25_top4": [
+        "order_size_change",
+        "exchange_size",
+        "refund_timing",
+        "catalog_limits"
+      ],
+      "hybrid_top4": [
+        "order_size_change",
+        "exchange_size",
+        "change_address",
+        "order_overview"
+      ],
+      "bm25_hit": true,
+      "hybrid_hit": true,
+      "retrieval": {
+        "method": "Hybrid BM25 + Gemini embeddings + reciprocal-rank fusion",
+        "embedding_model": "gemini-embedding-001",
+        "document_cache": "hit",
+        "fallback_reason": null,
+        "dimension": 768
+      }
+    }
+  ]
+}

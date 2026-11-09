@@ -1,14 +1,88 @@
 [
-  {"query":"I sliced off the little label hanging from the shirt. Does the courier pouch matter?","expected":["garment_tags"]},
-  {"query":"The wedding is this weekend. Is your arrival day a promise?","expected":["eta_explained"]},
-  {"query":"How long before the money lands back with my bank?","expected":["refund_timing"]},
-  {"query":"I only slipped it on for a fit check. Is that the same as using it?","expected":["try_on"]},
-  {"query":"I don't want to pay a surprise collection fee.","expected":["return_cost"]},
-  {"query":"Can I show you the torn seam in a picture?","expected":["return_photos","damaged_item"]},
-  {"query":"After I press submit, is someone already coming to collect it?","expected":["return_steps","pickup_preference"]},
-  {"query":"Why can't you just find it from the number on my receipt?","expected":["identity_reason"]},
-  {"query":"Swap the medium for a large. Can you hold one aside?","expected":["exchange_size"]},
-  {"query":"Can the destination be corrected once it has left your warehouse?","expected":["change_address"]},
-  {"query":"Cash left my bank but nothing appears on the orders page.","expected":["payment_help"]},
-  {"query":"Which detergent and wash temperature should I use for that knit?","expected":["catalog_limits"]}
+  {
+    "query": "I sliced off the little label hanging from the shirt. Does the courier pouch matter?",
+    "expected": [
+      "garment_tags"
+    ]
+  },
+  {
+    "query": "The wedding is this weekend. Is your arrival day a promise?",
+    "expected": [
+      "eta_explained"
+    ]
+  },
+  {
+    "query": "How long before the money lands back with my bank?",
+    "expected": [
+      "refund_timing"
+    ]
+  },
+  {
+    "query": "I only slipped it on for a fit check. Is that the same as using it?",
+    "expected": [
+      "try_on"
+    ]
+  },
+  {
+    "query": "I don't want to pay a surprise collection fee.",
+    "expected": [
+      "return_cost"
+    ]
+  },
+  {
+    "query": "Can I show you the torn seam in a picture?",
+    "expected": [
+      "return_photos",
+      "damaged_item"
+    ]
+  },
+  {
+    "query": "After I press submit, is someone already coming to collect it?",
+    "expected": [
+      "return_steps",
+      "pickup_preference"
+    ]
+  },
+  {
+    "query": "Why can't you just find it from the number on my receipt?",
+    "expected": [
+      "identity_reason"
+    ]
+  },
+  {
+    "query": "Swap the medium for a large. Can you hold one aside?",
+    "expected": [
+      "exchange_size"
+    ]
+  },
+  {
+    "query": "Can the destination be corrected once it has left your warehouse?",
+    "expected": [
+      "change_address"
+    ]
+  },
+  {
+    "query": "Cash left my bank but nothing appears on the orders page.",
+    "expected": [
+      "payment_help"
+    ]
+  },
+  {
+    "query": "Which detergent and wash temperature should I use for that knit?",
+    "expected": [
+      "catalog_limits"
+    ]
+  },
+  {
+    "query": "I bought a small hoodie but need medium before it ships. Can I amend the same order?",
+    "expected": [
+      "order_size_change"
+    ]
+  },
+  {
+    "query": "You showed S to M. If I confirm will it actually save my new size?",
+    "expected": [
+      "order_size_change"
+    ]
+  }
 ]

@@ -109,7 +109,7 @@ def state(store):
                               "mode": (channel.get("latest_trace") or {}).get("mode")})
     return {"orders": store.orders(), "customers": store.all_records("customers"), "returns": store.all_records("returns"),
             "settings": store.settings(), "tickets": store.records("tickets"), "traces": store.records("traces"),
-            "activity": store.all_records("activity"), "conversations": sorted(conversations, key=lambda c: c["updated_at"], reverse=True), "catalog": CATALOG}
+            "activity": store.all_records("activity"), "conversations": sorted(conversations, key=lambda c: c["updated_at"], reverse=True), "catalog": [{**p,"sizes":store.product_sizes(p["sku"])} for p in CATALOG]}
 
 
 def full_name(customer):
@@ -233,6 +233,8 @@ def register(app, get_store, get_workflow, get_hub, require_admin):
             product = next((p for p in CATALOG if p["sku"] == line.sku), None)
             if not product:
                 raise HTTPException(422, "Select an item from the product list.")
+            if line.size not in store.product_sizes(line.sku):
+                raise HTTPException(422, "Choose an offered size for this product.")
             items.append({"item_id": f"{order_id}-{n}", "sku": product["sku"], "name": product["name"], "quantity": line.quantity,
                           "unit_price": product["price"], "image": product["image"], "size": line.size, "color": product["color"], "status": "processing", "delivered_at": None, "final_sale": False, "returned": False})
         order = {"order_id": order_id, "customer_id": body.customer_id, "policy_version": store.setting("policy")["version"], "status": "processing", "carrier": "Unassigned", "carrier_eta_date": None,

@@ -74,6 +74,28 @@ def check(record, store, expected):
             need(not store.records("tickets"), "no_tickets")
         elif key == "ticket_count":
             need(len(store.records("tickets")) == exp, "ticket_count")
+        elif key == "item_size":
+            order = store.order(exp["order_id"])
+            need(
+                order["items"][exp.get("item_index", 0)]["size"] == exp["size"],
+                "item_size",
+            )
+        elif key == "size_change_step":
+            need(
+                (record.get("size_change") or {}).get("step") == exp, "size_change_step"
+            )
+        elif key == "size_write_count":
+            need(
+                len(
+                    [
+                        a
+                        for a in store.all_records("activity")
+                        if a["action"] == "size_changed"
+                    ]
+                )
+                == exp,
+                "size_write_count",
+            )
     return errors
 
 
@@ -91,6 +113,15 @@ async def run(args):
         for mode in args.modes:
             for case in cases:
                 store = Store(Path(folder) / (mode + "-" + case["id"] + ".db"))
+                for additional in case.get("additional_orders", []):
+                    store.insert_order(additional)
+                for reference, updates in case.get(
+                    "order_updates_before_first", {}
+                ).items():
+                    store.revise_order(
+                        reference,
+                        lambda current, changes=updates: {**current, **changes},
+                    )
                 channel = WhatsAppChannel(store, Workflow(store, model), ChannelHub())
                 record = channel.start()
                 turns = []
@@ -113,6 +144,7 @@ async def run(args):
                         {
                             "customer": text,
                             "reply": record["messages"][-1]["text"],
+                            "outcome": record["messages"][-1].get("outcome"),
                             "mode": trace.get("mode"),
                             "intent": (trace.get("plan") or {}).get("intent"),
                             "plan": trace.get("plan"),

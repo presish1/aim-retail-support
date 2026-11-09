@@ -15,8 +15,9 @@ from starlette.websockets import WebSocketDisconnect
 
 from .service import date_label, iso_now
 from .reads import SourceError, read_audit
-from .returns_flow import ReturnFlow, choices
+from .returns_flow import ReturnFlow
 from .support import SupportConversation
+from .delivery import estimate_text
 
 
 class ChannelHub:
@@ -67,7 +68,8 @@ class ChannelHub:
                     fresh = workflow.read_order(session["customer"], order_id)
                 except Exception:
                     continue
-                text = "*Order update · #" + order_id + "*\n\n" + workflow.status_reply(fresh)["message"]
+                eta_only = before.get("carrier_eta_date") != fresh.get("carrier_eta_date") and all(before.get(k)==fresh.get(k) for k in ("status","carrier","tracking_reference","items"))
+                text = ("*Delivery estimate updated · #" + order_id + "*\n\n" + estimate_text(fresh,store.setting("demo_now"))) if eta_only else "*Order update · #" + order_id + "*\n\n" + workflow.status_reply(fresh)["message"]
                 if len(fresh["items"]) > 1:
                     text += "\n\n" + "\n".join(i["name"] + ": " + i["status"].replace("_", " ") for i in fresh["items"])
                 if fresh.get("tracking_reference") and before.get("tracking_reference") != fresh["tracking_reference"]:

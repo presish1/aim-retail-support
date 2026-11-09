@@ -220,11 +220,13 @@ export function CustomerForm({
 export function NewOrderForm({
   data,
   customerId,
+  initialSize,
   submit,
   close,
 }: {
   data: Workspace;
   customerId?: string;
+  initialSize?: string;
   submit: (body: unknown) => Promise<void>;
   close: () => void;
 }) {
@@ -237,7 +239,11 @@ export function NewOrderForm({
       )?.city || "",
     );
   const [lines, setLines] = useState([
-      { sku: data.catalog[0]?.sku || "", quantity: 1, size: "M" },
+      {
+        sku: data.catalog[0]?.sku || "",
+        quantity: 1,
+        size: initialSize || "M",
+      },
     ]),
     [payment, setPayment] = useState("paid"),
     [notes, setNotes] = useState(""),
@@ -320,7 +326,19 @@ export function NewOrderForm({
                   onChange={(e) =>
                     setLines(
                       lines.map((l, n) =>
-                        n === i ? { ...l, sku: e.target.value } : l,
+                        n === i
+                          ? {
+                              ...l,
+                              sku: e.target.value,
+                              size: data.catalog
+                                .find((p) => p.sku === e.target.value)
+                                ?.sizes?.includes(l.size)
+                                ? l.size
+                                : data.catalog.find(
+                                    (p) => p.sku === e.target.value,
+                                  )?.sizes?.[0] || "M",
+                            }
+                          : l,
                       ),
                     )
                   }
@@ -344,7 +362,9 @@ export function NewOrderForm({
                     )
                   }
                 >
-                  {["XS", "S", "M", "L", "XL", "32", "34"].map((s) => (
+                  {(
+                    data.catalog.find((p) => p.sku === line.sku)?.sizes || ["M"]
+                  ).map((s) => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -437,6 +457,153 @@ const orderFields = (o: Order) => ({
   priority: o.priority || "normal",
   notes: o.notes || "",
 });
+
+export function DeliveryEstimateForm({
+  order,
+  demoNow,
+  save,
+  close,
+}: {
+  order: Order;
+  demoNow: string;
+  save: (body: unknown) => Promise<Order>;
+  close: () => void;
+}) {
+  const [estimate, setEstimate] = useState(order.carrier_eta_date || "");
+  const [revision, setRevision] = useState(order.revision || 1);
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const terminal = ["delivered", "returned", "cancelled"].includes(
+    order.status,
+  );
+  const changed = (order.revision || 1) !== revision;
+  const demoDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(demoNow));
+  function offset(days: number) {
+    const date = new Date(demoDate + "T12:00:00Z");
+    date.setUTCDate(date.getUTCDate() + days);
+    return date.toISOString().slice(0, 10);
+  }
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      await save({ carrier_eta_date: estimate || null, revision });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <form onSubmit={submit}>
+      <div className="erp-form-content erp-estimate-form">
+        <div className="erp-estimate-order">
+          <strong>Order #{order.order_id}</strong>
+          <span>{order.items.map((i) => i.name).join(", ")}</span>
+        </div>
+        <p>
+          The saved date appears in customer replies. A connected customer
+          viewing this order receives an update.
+        </p>
+        <div className="erp-estimate-presets">
+          {[
+            ["Today", 0],
+            ["Tomorrow", 1],
+            ["In 3 days", 3],
+            ["Past estimate", -1],
+          ].map(([label, days]) => (
+            <button
+              key={label}
+              type="button"
+              disabled={busy || terminal}
+              className={estimate === offset(Number(days)) ? "selected" : ""}
+              onClick={() => setEstimate(offset(Number(days)))}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <small className="erp-muted">
+          Presets use the store demo date: {day(demoDate)} · IST
+        </small>
+        <label className="erp-estimate-date">
+          Estimated arrival
+          <input
+            autoFocus
+            aria-label="Estimated arrival date"
+            type="date"
+            value={estimate}
+            disabled={busy || terminal}
+            onChange={(e) => setEstimate(e.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          className="erp-text-button"
+          disabled={busy || !estimate || terminal}
+          onClick={() => setEstimate("")}
+        >
+          Clear estimate
+        </button>
+        {terminal && (
+          <p role="status">
+            This order is {labels[order.status].toLowerCase()}. Delivery
+            estimates apply to active orders.
+          </p>
+        )}
+        {changed && (
+          <div className="erp-inline-warning">
+            This order changed in another tab.
+            <button
+              type="button"
+              onClick={() => {
+                setEstimate(order.carrier_eta_date || "");
+                setRevision(order.revision || 1);
+                setError("");
+              }}
+            >
+              Reload current estimate
+            </button>
+          </div>
+        )}
+        {error && (
+          <p className="erp-form-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+      <footer className="erp-form-actions">
+        <button
+          type="button"
+          className="erp-button"
+          onClick={close}
+          disabled={busy}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="erp-button primary"
+          disabled={busy || terminal || changed}
+        >
+          {busy ? (
+            <LoaderCircle size={15} className="spin" />
+          ) : (
+            <Check size={15} />
+          )}
+          Save estimate
+        </button>
+      </footer>
+    </form>
+  );
+}
+
 export function OrderDetails({
   order,
   customer,
@@ -681,7 +848,9 @@ export function OrderDetails({
                   Estimated delivery
                   <input
                     type="date"
-                    disabled={form.status === "delivered"}
+                    disabled={["delivered", "returned", "cancelled"].includes(
+                      form.status,
+                    )}
                     value={form.carrier_eta_date}
                     onChange={(e) => field("carrier_eta_date", e.target.value)}
                   />

@@ -1,20 +1,501 @@
 [
-  {"id":"general_policy","turns":["Could you explain the return policy?"],"expect":{"intent":"policy","outcome":"GUIDE_ANSWER","guide":"return_policy","contains":"30","stage":"contact"}},
-  {"id":"refund_timing","turns":["How long do I need to wait for my refund?"],"expect":{"intent":"policy","guide":"refund_timing","stage":"contact","no_tickets":true}},
-  {"id":"privacy_question","turns":["Why do you need my mobile number?"],"expect":{"intent":"identity","guide":"identity_reason","stage":"contact"}},
-  {"id":"tracking_only","turns":["Where is my order?","aarav@example.com","4812","Please give me just the tracking number"],"expect":{"intent":"order_status","contains":"DEMO4812IN","not_contains":"₹","order":"4812"}},
-  {"id":"arrival_followup","turns":["aarav@example.com","4812","When should I expect it to arrive?"],"expect":{"intent":"order_status","contains":"9 November","order":"4812"}},
-  {"id":"urgent_occasion","turns":["aarav@example.com","4812","My hoodie is late and I need it for a wedding tomorrow"],"expect":{"intent":"delivery_delay","contains":"9 November","order":"4812","offer":true}},
-  {"id":"compound_facts","turns":["aarav@example.com","4812","What did I order, how much was the total and is payment paid?"],"expect":{"intent":"order_status","contains_all":["Weekday Hoodie","1,999.00","paid"]}},
-  {"id":"plain_language_reason","turns":["aarav@example.com","Return order 4813","the shirt is too tight for me"],"expect":{"draft_step":"condition","reason":"Size or fit"}},
-  {"id":"combined_condition_tags","turns":["aarav@example.com","Return order 4813","Size or fit","I just tried it on and the tag is still on it"],"expect":{"draft_step":"photos","condition":"Unworn / only tried on","tags":"Tags attached"}},
-  {"id":"tags_question_interrupt","turns":["aarav@example.com","Return order 4813","Size or fit","What do you mean by original tags?"],"expect":{"intent":"policy","guide":"garment_tags","draft_step":"condition"}},
-  {"id":"fee_question_interrupt","turns":["aarav@example.com","Return order 4813","Size or fit","Unworn / only tried on","Tags attached","Is return pickup free?"],"expect":{"intent":"policy","guide":"return_cost","draft_step":"photos","no_tickets":true}},
-  {"id":"no_wash_not_enough","turns":["aarav@example.com","Return order 4813","Size or fit","I haven't washed it"],"expect":{"draft_step":"condition","contains":"worn"}},
-  {"id":"cross_account","turns":["aarav@example.com","Track order 4901"],"expect":{"outcome":"INACCESSIBLE_ORDER","not_contains":"Utility Jacket"}},
-  {"id":"source_outage","turns":["aarav@example.com","4812","Check the latest status"],"controls_before_last":{"order_api_available":false},"expect":{"outcome":"ORDER_SERVICE_UNAVAILABLE","not_contains":"9 November"}},
-  {"id":"human_preserves_draft","turns":["aarav@example.com","Return order 4813","Size or fit","I want to speak to a person"],"expect":{"outcome":"HANDOFF_CREATED","draft_step":"condition","ticket_count":1}},
-  {"id":"different_purchase","turns":["aarav@example.com","4812","I want to return the white shirt"],"expect":{"order":"4813","draft_step":"reason"}},
-  {"id":"live_estimate_change","turns":["aarav@example.com","4812","When should it arrive?","Can you check again?"],"order_updates_before_last":{"4812":{"carrier_eta_date":"2026-11-12"}},"expect":{"order":"4812","contains":"12 November","not_contains":"9 November"}},
-  {"id":"live_tracking_change","turns":["aarav@example.com","4812","Just the tracking reference please","Just the tracking reference please"],"order_updates_before_last":{"4812":{"tracking_reference":"CURRENT-AWB-555"}},"expect":{"order":"4812","contains":"CURRENT-AWB-555","not_contains":"DEMO4812IN"}}
+  {
+    "id": "general_policy",
+    "turns": [
+      "Could you explain the return policy?"
+    ],
+    "expect": {
+      "intent": "policy",
+      "outcome": "GUIDE_ANSWER",
+      "guide": "return_policy",
+      "contains": "30",
+      "stage": "contact"
+    }
+  },
+  {
+    "id": "refund_timing",
+    "turns": [
+      "How long do I need to wait for my refund?"
+    ],
+    "expect": {
+      "intent": "policy",
+      "guide": "refund_timing",
+      "stage": "contact",
+      "no_tickets": true
+    }
+  },
+  {
+    "id": "privacy_question",
+    "turns": [
+      "Why do you need my mobile number?"
+    ],
+    "expect": {
+      "intent": "identity",
+      "guide": "identity_reason",
+      "stage": "contact"
+    }
+  },
+  {
+    "id": "tracking_only",
+    "turns": [
+      "Where is my order?",
+      "aarav@example.com",
+      "4812",
+      "Please give me just the tracking number"
+    ],
+    "expect": {
+      "intent": "order_status",
+      "contains": "DEMO4812IN",
+      "not_contains": "₹",
+      "order": "4812"
+    }
+  },
+  {
+    "id": "arrival_followup",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "When should I expect it to arrive?"
+    ],
+    "expect": {
+      "intent": "order_status",
+      "contains": "9 November",
+      "order": "4812"
+    }
+  },
+  {
+    "id": "urgent_occasion",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "My hoodie is late and I need it for a wedding tomorrow"
+    ],
+    "expect": {
+      "intent": "delivery_delay",
+      "contains": "9 November",
+      "order": "4812",
+      "offer": true
+    }
+  },
+  {
+    "id": "compound_facts",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "What did I order, how much was the total and is payment paid?"
+    ],
+    "expect": {
+      "intent": "order_status",
+      "contains_all": [
+        "Weekday Hoodie",
+        "1,999.00",
+        "paid"
+      ]
+    }
+  },
+  {
+    "id": "plain_language_reason",
+    "turns": [
+      "aarav@example.com",
+      "Return order 4813",
+      "the shirt is too tight for me"
+    ],
+    "expect": {
+      "draft_step": "condition",
+      "reason": "Size or fit"
+    }
+  },
+  {
+    "id": "combined_condition_tags",
+    "turns": [
+      "aarav@example.com",
+      "Return order 4813",
+      "Size or fit",
+      "I just tried it on and the tag is still on it"
+    ],
+    "expect": {
+      "draft_step": "photos",
+      "condition": "Unworn / only tried on",
+      "tags": "Tags attached"
+    }
+  },
+  {
+    "id": "tags_question_interrupt",
+    "turns": [
+      "aarav@example.com",
+      "Return order 4813",
+      "Size or fit",
+      "What do you mean by original tags?"
+    ],
+    "expect": {
+      "intent": "policy",
+      "guide": "garment_tags",
+      "draft_step": "condition"
+    }
+  },
+  {
+    "id": "fee_question_interrupt",
+    "turns": [
+      "aarav@example.com",
+      "Return order 4813",
+      "Size or fit",
+      "Unworn / only tried on",
+      "Tags attached",
+      "Is return pickup free?"
+    ],
+    "expect": {
+      "intent": "policy",
+      "guide": "return_cost",
+      "draft_step": "photos",
+      "no_tickets": true
+    }
+  },
+  {
+    "id": "no_wash_not_enough",
+    "turns": [
+      "aarav@example.com",
+      "Return order 4813",
+      "Size or fit",
+      "I haven't washed it"
+    ],
+    "expect": {
+      "draft_step": "condition",
+      "contains": "worn"
+    }
+  },
+  {
+    "id": "cross_account",
+    "turns": [
+      "aarav@example.com",
+      "Track order 4901"
+    ],
+    "expect": {
+      "outcome": "INACCESSIBLE_ORDER",
+      "not_contains": "Utility Jacket"
+    }
+  },
+  {
+    "id": "source_outage",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "Check the latest status"
+    ],
+    "controls_before_last": {
+      "order_api_available": false
+    },
+    "expect": {
+      "outcome": "ORDER_SERVICE_UNAVAILABLE",
+      "not_contains": "9 November"
+    }
+  },
+  {
+    "id": "human_preserves_draft",
+    "turns": [
+      "aarav@example.com",
+      "Return order 4813",
+      "Size or fit",
+      "I want to speak to a person"
+    ],
+    "expect": {
+      "outcome": "HANDOFF_CREATED",
+      "draft_step": "condition",
+      "ticket_count": 1
+    }
+  },
+  {
+    "id": "different_purchase",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "I want to return the white shirt"
+    ],
+    "expect": {
+      "order": "4813",
+      "draft_step": "reason"
+    }
+  },
+  {
+    "id": "live_estimate_change",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "When should it arrive?",
+      "Can you check again?"
+    ],
+    "order_updates_before_last": {
+      "4812": {
+        "carrier_eta_date": "2026-11-12"
+      }
+    },
+    "expect": {
+      "order": "4812",
+      "contains": "12 November",
+      "not_contains": "9 November"
+    }
+  },
+  {
+    "id": "live_tracking_change",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "Just the tracking reference please",
+      "Just the tracking reference please"
+    ],
+    "order_updates_before_last": {
+      "4812": {
+        "tracking_reference": "CURRENT-AWB-555"
+      }
+    },
+    "expect": {
+      "order": "4812",
+      "contains": "CURRENT-AWB-555",
+      "not_contains": "DEMO4812IN"
+    }
+  },
+  {
+    "id": "delivery_offer_accept",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "My hoodie is late and I need it for a wedding tomorrow",
+      "Yes please"
+    ],
+    "expect": {
+      "outcome": "HANDOFF_CREATED",
+      "ticket_count": 1,
+      "offer": false
+    }
+  },
+  {
+    "id": "delivery_offer_decline",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "My parcel is late",
+      "No thanks"
+    ],
+    "expect": {
+      "outcome": "ACKNOWLEDGED",
+      "no_tickets": true,
+      "offer": false
+    }
+  },
+  {
+    "id": "estimate_removed",
+    "turns": [
+      "aarav@example.com",
+      "4812",
+      "When will it arrive?"
+    ],
+    "order_updates_before_last": {
+      "4812": {
+        "carrier_eta_date": null
+      }
+    },
+    "expect": {
+      "contains": "don't have a delivery date",
+      "not_contains": "9 November"
+    }
+  },
+  {
+    "id": "size_change_confirm",
+    "order_updates_before_first": {
+      "4812": {
+        "status": "processing",
+        "items": [
+          {
+            "item_id": "4812-1",
+            "name": "Weekday Hoodie",
+            "quantity": 1,
+            "status": "processing",
+            "delivered_at": null,
+            "final_sale": false,
+            "returned": false,
+            "size": "S",
+            "color": "Ecru",
+            "unit_price": 1999,
+            "sku": "TL-HOOD-01",
+            "image": "/products/hoodie.jpg"
+          }
+        ],
+        "carrier_eta_date": null,
+        "tracking_reference": ""
+      }
+    },
+    "turns": [
+      "aarav@example.com",
+      "I ordered S but need M for order 4812",
+      "Yes please"
+    ],
+    "expect": {
+      "outcome": "SIZE_CHANGED",
+      "item_size": {
+        "order_id": "4812",
+        "size": "M"
+      },
+      "size_write_count": 1,
+      "contains_all": [
+        "previously S",
+        "quantity are unchanged"
+      ]
+    }
+  },
+  {
+    "id": "size_change_cancel",
+    "order_updates_before_first": {
+      "4812": {
+        "status": "processing",
+        "items": [
+          {
+            "item_id": "4812-1",
+            "name": "Weekday Hoodie",
+            "quantity": 1,
+            "status": "processing",
+            "delivered_at": null,
+            "final_sale": false,
+            "returned": false,
+            "size": "S",
+            "color": "Ecru",
+            "unit_price": 1999,
+            "sku": "TL-HOOD-01",
+            "image": "/products/hoodie.jpg"
+          }
+        ],
+        "carrier_eta_date": null,
+        "tracking_reference": ""
+      }
+    },
+    "turns": [
+      "aarav@example.com",
+      "Can you change my hoodie from S to M for order 4812?",
+      "Cancel size change"
+    ],
+    "expect": {
+      "outcome": "SIZE_CHANGE_CANCELLED",
+      "item_size": {
+        "order_id": "4812",
+        "size": "S"
+      },
+      "size_write_count": 0
+    }
+  },
+  {
+    "id": "size_stale_consent",
+    "order_updates_before_first": {
+      "4812": {
+        "status": "processing",
+        "items": [
+          {
+            "item_id": "4812-1",
+            "name": "Weekday Hoodie",
+            "quantity": 1,
+            "status": "processing",
+            "delivered_at": null,
+            "final_sale": false,
+            "returned": false,
+            "size": "S",
+            "color": "Ecru",
+            "unit_price": 1999,
+            "sku": "TL-HOOD-01",
+            "image": "/products/hoodie.jpg"
+          }
+        ],
+        "carrier_eta_date": null,
+        "tracking_reference": ""
+      }
+    },
+    "turns": [
+      "aarav@example.com",
+      "Change size to M for order 4812",
+      "Confirm size change"
+    ],
+    "order_updates_before_last": {
+      "4812": {
+        "notes": "Staff changed the record after the preview"
+      }
+    },
+    "expect": {
+      "outcome": "SIZE_CHANGE_PREVIEW",
+      "size_change_step": "confirm",
+      "item_size": {
+        "order_id": "4812",
+        "size": "S"
+      },
+      "size_write_count": 0
+    }
+  },
+  {
+    "id": "shipped_size_review",
+    "turns": [
+      "aarav@example.com",
+      "Change my hoodie to M for order 4812",
+      "Yes please"
+    ],
+    "expect": {
+      "outcome": "HANDOFF_CREATED",
+      "ticket_count": 1,
+      "item_size": {
+        "order_id": "4812",
+        "size": "M"
+      },
+      "size_write_count": 0
+    }
+  },
+  {
+    "id": "changed_size_followup",
+    "additional_orders": [
+      {
+        "order_id": "5555",
+        "customer_id": "demo-customer-a",
+        "policy_version": "demo-returns-v1",
+        "status": "processing",
+        "carrier": "Threadline Logistics (demo)",
+        "carrier_eta_date": null,
+        "source_updated_at": "2026-11-07T10:30:00Z",
+        "tracking_url": null,
+        "items": [
+          {
+            "item_id": "5555-1",
+            "name": "Weekday Hoodie",
+            "quantity": 1,
+            "status": "processing",
+            "delivered_at": null,
+            "final_sale": false,
+            "returned": false,
+            "size": "S",
+            "color": "Ecru",
+            "unit_price": 1999,
+            "sku": "TL-HOOD-01",
+            "image": "/products/hoodie.jpg"
+          }
+        ],
+        "ordered_at": "2026-11-05T15:20:00Z",
+        "order_total": 1999,
+        "currency": "INR",
+        "shipping_city": "Bengaluru, Karnataka",
+        "tracking_reference": "",
+        "payment_status": "paid",
+        "priority": "normal",
+        "revision": 1,
+        "notes": ""
+      }
+    ],
+    "turns": [
+      "aarav@example.com",
+      "I ordered S but need M for order 5555",
+      "Confirm size change",
+      "What size is my hoodie now?"
+    ],
+    "expect": {
+      "outcome": "ORDER_STATUS",
+      "order": "5555",
+      "contains": "M /",
+      "item_size": {
+        "order_id": "5555",
+        "size": "M"
+      },
+      "size_write_count": 1
+    }
+  }
 ]

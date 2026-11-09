@@ -2463,3 +2463,94 @@
   color: #8792a0;
   font-size: 9px;
 }
+.erp-estimate-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  margin-left: -8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--erp-text, #26332d);
+  white-space: nowrap;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.erp-estimate-cell svg {
+  color: #7b8982;
+}
+.erp-estimate-cell.empty {
+  color: #64776c;
+}
+.erp-estimate-cell:hover {
+  background: #f0f4f1;
+  border-color: #dce5df;
+}
+.erp-estimate-cell:focus-visible {
+  outline: 2px solid #356650;
+  outline-offset: 2px;
+}
+.erp-estimate-form {
+  display: grid;
+  gap: 16px;
+}
+.erp-estimate-form p {
+  margin: 0;
+  color: #66736d;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.erp-estimate-order {
+  display: grid;
+  gap: 4px;
+}
+.erp-estimate-order span {
+  color: #6b7972;
+  font-size: 13px;
+}
+.erp-estimate-presets {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.erp-estimate-presets button {
+  padding: 8px 11px;
+  border: 1px solid #dce4de;
+  border-radius: 5px;
+  background: #fff;
+  color: #43564a;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.erp-estimate-presets button.selected {
+  border-color: #668675;
+  background: #edf4ef;
+  color: #28513b;
+}
+.erp-estimate-presets button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.erp-estimate-date {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.erp-estimate-date input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid #d8e1da;
+  border-radius: 5px;
+  background: #fff;
+  color: #2b3c32;
+  font: inherit;
+}
+.erp-estimate-form .erp-text-button {
+  justify-self: start;
+}

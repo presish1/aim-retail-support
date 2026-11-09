@@ -26,6 +26,7 @@ export interface Product {
   price: number;
   color: string;
   image?: string;
+  sizes?: string[];
 }
 export interface Item {
   item_id: string;

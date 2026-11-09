@@ -1,12 +1,18 @@
 {
-  "version": "threadline-support-v1",
+  "version": "threadline-support-v2",
   "scope": "Approved synthetic-store support guidance. Operational facts must be read from the current system.",
   "documents": [
     {
       "id": "order_overview",
       "title": "Current order summary and follow-ups",
-      "topics": ["order_status"],
-      "questions": ["where is my order", "check my order status", "latest order update check again"],
+      "topics": [
+        "order_status"
+      ],
+      "questions": [
+        "where is my order",
+        "check my order status",
+        "latest order update check again"
+      ],
       "answer": "Here are the latest details for your purchase. If something doesn't look right, tell me what's happened and I'll help with the next step."
     },
     {
@@ -311,6 +317,19 @@
         "why can't you get order"
       ],
       "answer": "I can't verify the latest details while the source is unavailable or delayed. I won't reuse an earlier message as the current status. I can save your question for the store to check."
+    },
+    {
+      "id": "order_size_change",
+      "title": "Changing an ordered size before fulfilment",
+      "topics": [
+        "size_change"
+      ],
+      "questions": [
+        "change order size from small to medium",
+        "I ordered S but need M",
+        "switch the size before shipping"
+      ],
+      "answer": "For an unfulfilled order, I can check the product’s offered sizes and prepare a size change for your confirmation. The order, quantity and price are checked again before saving. Once fulfilment has started, the store needs to help with an exchange or return. Offered sizes are catalogue options, not confirmed warehouse stock."
     }
   ]
 }

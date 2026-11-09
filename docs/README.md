@@ -1,6 +1,6 @@
 # Documentation map
 
-**Current scope: MVP v0.7 · reviewed 8 November 2026.** This is an MBA Scenario A prototype for an Indian D2C apparel store. Customer/purchase/policy fixtures are fictional. Gemini generation and embedding calls are real; the live order source is mutable local SQLite. Current focus is hybrid RAG, live reads and grounded support. Fine-tuning is outside scope.
+**Current scope: MVP v0.8 · reviewed 9 November 2026.** This is an MBA Scenario A prototype for an Indian D2C apparel store. Customer/purchase/policy fixtures are fictional. Gemini generation and embedding calls are real; the live order source is mutable local SQLite. Current focus is hybrid RAG, live reads and grounded support. Fine-tuning is outside scope.
 
 ## Start here
 
@@ -34,6 +34,7 @@ The system is not certified “totally safe,” production-ready, or universally
 | [16 — API and data reference](16-api-and-data-reference.md) | Current endpoints, socket events, records, settings and error contracts |
 | [17 — Evidence and FAQ](17-evidence-and-faq.md) | Verification scope, known gaps, management questions and learning prompts |
 | [19 — Gemini, hybrid RAG and live data](19-gemini-hybrid-live-data.md) | Current generation, embeddings/cache, ranking/fallback, database authority, grounding and tests |
+| [20 — Delivery and customer order changes](20-delivery-and-order-actions.md) | Live estimates, confirmed size edits, transactional safeguards, conversational offers and demo steps |
 | [Sources](sources.md) | Code evidence and dated primary external references |
 | [Demo data](../data/README.md) | Fictional accounts, orders, policy and fixed clock |
 

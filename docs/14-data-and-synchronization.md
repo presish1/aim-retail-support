@@ -9,9 +9,10 @@ SQLite tables in [store.py](../backend/store.py) contain JSON records plus looku
 | Table | Purpose / relationship |
 | --- | --- |
 | `customers` | Internal ID, display ID, normalized email/phone and synthetic profile |
+| `product_sizes` | Enabled size options per SKU; seeded from versioned configuration; not a stock/reservation ledger |
 | `orders` | Order ID → customer; item IDs, status/dates, price/quantity, currency, payment, policy version and revision |
 | `sessions` | Random session ID → bound customer and workflow history, retained to the last 20 messages |
-| `channel_sessions` | Same session → channel stage, selected order, messages, return draft and latest trace; ordinary handling trims channel history to 120 messages |
+| `channel_sessions` | Same session → channel stage, selected order, messages, return/size-change drafts, pending offer and latest trace; ordinary handling trims channel history to 120 messages |
 | `returns` | RMA → customer/order/item, quantity/value, condition/photos, pickup and lifecycle fields |
 | `tickets` | Support request, deduplication key, request/transcript and available evidence |
 | `media` | Opaque media token → uploading session and local file path |
@@ -19,7 +20,7 @@ SQLite tables in [store.py](../backend/store.py) contain JSON records plus looku
 | `activity` | Mutable operator/customer event record, actor label and changes |
 | `settings` | Fixed demo clock, policy and synthetic source/control configuration |
 
-There is no production multi-tenant retailer boundary, document database or vector index. Records/list APIs are bounded for the small demo; `all_records` uses a 500-record limit and trace/ticket listing a 100-record limit. In particular, a scan-based `return_for_item` is not a production indexed return lookup. Source adapters and a production schema must remove such assumptions.
+There is no production multi-tenant retailer boundary or document database. The approved support-guide vector cache is separate from operational SQLite; customer orders are not indexed. Records/list APIs are bounded for the small demo; `all_records` uses a 500-record limit and trace/ticket listing a 100-record limit. In particular, a scan-based `return_for_item` is not a production indexed return lookup. Source adapters and a production schema must remove such assumptions.
 
 ## Current authority
 
@@ -51,6 +52,12 @@ sequenceDiagram
 The order UI supplies `revision`; conflicts return 409. Item-level changes derive aggregate fulfilment. A return staff edit can supply `updated_at`, and `transition_return` compares the stored prior record within a transaction. `create_return_once` prevents duplicate active requests for the same order/item through a database-locked check. A received/refunded return and its local order/payment projection commit atomically.
 
 Version fields are optional at the API boundary, though normal UIs provide them. Do not describe the entire API as requiring optimistic concurrency from every client. Ticket deduplication uses a database uniqueness key; resolving a ticket releases the active-request key for later requests.
+
+## Customer size change → staff record
+
+The phone controller reads the owned order and configured sizes, then stores an exact revision-bound preview. Confirmation calls `Store.amend_order_size` under `BEGIN IMMEDIATE`: ownership, source controls, revision, processing state and enabled SKU size are rechecked. The size, revision/source timestamp and activity entry commit together. An expired or changed preview requires new consent. The hub invalidates the workspace; the open ERP reloads the same order. Success uses the committed delta on the public order projection. Business commit and socket notification are still separate, so a lost event does not undo the saved size. [Document 20](20-delivery-and-order-actions.md) specifies the sequence.
+
+ETA-only staff edits use the existing revision-checked order patch and send a concise date update rather than a full order summary. Unknown and past dates retain their meaning.
 
 ## What live sync does and does not guarantee
 

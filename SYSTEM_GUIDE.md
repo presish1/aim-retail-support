@@ -1,6 +1,6 @@
 # Threadline — complete MVP system guide
 
-**For the MBA presentation team and readers learning the system.** Local MVP v0.7, reviewed 8 November 2026. [Repository](https://github.com/presish1/aim-retail-support) · [Presentation briefing](docs/PRESENTATION_BRIEF.md) · [Documentation map](docs/README.md) · [Current Gemini/RAG/live-data reference](docs/19-gemini-hybrid-live-data.md).
+**For the MBA presentation team and readers learning the system.** Local MVP v0.8, reviewed 9 November 2026. [Repository](https://github.com/presish1/aim-retail-support) · [Presentation briefing](docs/PRESENTATION_BRIEF.md) · [Documentation map](docs/README.md) · [Current Gemini/RAG/live-data reference](docs/19-gemini-hybrid-live-data.md).
 
 ## What it actually is
 
@@ -21,6 +21,7 @@ The management recommendation is to automate bounded information retrieval and s
 | Identity | Existing synthetic account match or optional local code challenge | Real customer account linking, verified possession, staff authentication and permissions |
 | Data | Current SQLite customer/order/payment/return records | Existing commerce/OMS, courier and payment source adapters |
 | Returns | Questions, photos, quantity/address/window, review, explicit RMA submission and staff lifecycle | Real serviceability, reverse shipment, pickup and gateway reconciliation |
+| Customer size edit | Explicitly confirmed same-SKU size change on owned unfulfilled orders, revision + activity transaction | Real OMS variant/inventory mapping, fulfilment cutoff and verified identity |
 | Sync | Shared database, revision checks, live workspace refresh and scoped customer updates | Durable event inbox/outbox, retry, reconciliation and multi-worker distribution |
 | Evidence | Source traces, revisions, guide provenance, composition decisions, automated backend cases and authored real-model conversations | Security assessment, unseen language evaluation, provider sandbox/load tests and operating metrics |
 
@@ -48,7 +49,7 @@ There is also a useful comparison with other chatbot designs:
 | Rules bot connected to APIs | Structured lookup and fixed workflows | Can provide the same factual controls; the MVP's model must prove added language value |
 | This MVP | Contextual understanding/writing with retrieved guidance, validated live facts, return intake and staff workflow | Demonstrates how those responsibilities fit together; it is not proof of a unique capability or superiority over existing software |
 
-Version 0.7 uses native Gemini generation and Gemini embeddings with BM25/rank fusion. Live reads, persistent records and commercial-action gates remain. Fine-tuning is outside the scope.
+Version 0.8 uses native Gemini generation and Gemini embeddings with BM25/rank fusion. Live reads, persistent records and commercial-action gates remain. Fine-tuning is outside the scope.
 
 ## Architecture in plain language
 
@@ -96,7 +97,7 @@ See [the architecture reference](docs/03-architecture.md) for component and sequ
 | `check_return_eligibility` | Evaluate the selected item or read its existing return status | Backend decides policy, deadlines and values |
 | `create_support_ticket` | Save a handoff with available context | Does not issue a refund, cancel an order or approve a return |
 
-**Internal reads** are `LiveReads.get_customer`, `list_orders`, `get_order`, `get_payment`, `get_policy` and `get_return`. The workflow calls these after validating the request. They are not six extra tools the model can freely execute. Audit names sometimes differ: `get_policy` logs `get_return_policy`.
+**Internal reads** are `LiveReads.get_customer`, `list_orders`, `get_order`, `get_payment`, `get_policy`, `get_return` and `get_product_sizes`. The workflow calls these after validating the request. They are not extra tools the model can freely execute. Audit names sometimes differ: `get_policy` logs `get_return_policy`.
 
 **Business tools** are operational systems or their adapters. A real OMS/store API, courier API, payment/refund API, helpdesk, identity service, private media storage and WhatsApp adapter are proposed. Shopify, Shiprocket, Razorpay and Twilio are examples to evaluate if relevant to the retailer, not vendors already connected or selected. [The tool catalogue](docs/13-business-tools-and-scenarios.md) explains the difference and the approval required for each action.
 
@@ -131,9 +132,15 @@ The central design decision is to keep transactional values outside generated pr
 
 This does not guarantee zero mistakes. Sources can be wrong; the model can misunderstand an issue or add a qualitative statement that the validator misses; item heuristics, templates and rules can contain bugs; customer reports may be inaccurate; a feed may lag without a correct health signal. Tests establish behavior in defined cases, not a universal hallucination rate. [Document 11](docs/11-grounding-and-safety.md) connects controls to residual risk.
 
+## Customer changes and delivery estimates
+
+The customer can request S → M on an owned unfulfilled purchase. The controller reads current order and enabled SKU size options, shows an exact preview and requires confirmation. A ten-minute preview carries the expected revision. The transaction rechecks ownership, source health, fulfilment and size options, and saves size, revision and activity together. A stale preview needs fresh consent; a shipped item goes to store exchange review. Configured sizes are not stock or reservations. The model does not directly execute the write.
+
+Staff can set or clear an estimate from the Orders table. ETA-only edits send a concise source-backed update to the eligible connected chat; later questions read current data again. Unknown dates stay unknown, past estimates are identified, and estimates are not guarantees. Short acknowledgements and accepted investigation offers make the conversation more useful while business facts and action receipts stay guarded. [Document 20](docs/20-delivery-and-order-actions.md) gives the complete sequence, authority limits and demo script.
+
 ## Hybrid RAG and live facts
 
-RAG retrieves from 25 approved passages using BM25, 768-dimensional Gemini embeddings, cosine ranking and reciprocal-rank fusion. Document vectors are cached by corpus/model/dimension; guide edits invalidate the cache. Semantic failure is explicitly labeled and falls back to approved keyword retrieval. Orders, transcripts and uploads are not indexed. RAG explains policy/process; current owned database reads supply operational facts and numeric policy values.
+RAG retrieves from 26 approved passages using BM25, 768-dimensional Gemini embeddings, cosine ranking and reciprocal-rank fusion. Document vectors are cached by corpus/model/dimension; guide edits invalidate the cache. Semantic failure is explicitly labeled and falls back to approved keyword retrieval. Orders, transcripts and uploads are not indexed. RAG explains policy/process; current owned database reads supply operational facts and numeric policy values.
 
 Gemini 3.8 Flash uses native structured output, provider sampling defaults, LOW thinking, a 2,048-token output cap and 30-second timeout. Temperature/top-p are omitted for this provider. There is at most one generation call per support turn, plus a query embedding when semantic retrieval is used. Exact actions/social turns can avoid both. ERP evidence shows the actual model, retrieval method, passage IDs/version/digest, order revision/fetch time, reads and composition decision.
 
@@ -192,7 +199,7 @@ Present the MVP's feasibility and a conditional pilot recommendation. First iden
 
 Measure correct task/order/item selection, factual matching, disclosures/actions, handoff quality, useful-answer latency, stale sources, message failures and total cost. Count queries, cases and messages separately. Four hundred daily queries is an assignment input, not a measured peak-concurrency trace. Capacity saved is not automatically payroll cash saved.
 
-The backend suite covers defined source, conversation, retrieval, provider failure, transport and transaction conditions. The current runner executes 18 authored scenarios in baseline and real-Gemini mode, including live estimate/tracking mutations. A separate 12-query test compares keyword versus hybrid retrieval. These development regressions are not an unseen benchmark. [Evidence and FAQ](docs/17-evidence-and-faq.md) records results and remaining production gaps.
+The backend suite covers defined source, conversation, retrieval, provider failure, transport and transaction conditions. The current runner executes 26 authored scenarios in baseline and real-Gemini mode, including live estimate/tracking mutations. A separate 14-query test compares keyword versus hybrid retrieval. These development regressions are not an unseen benchmark. [Evidence and FAQ](docs/17-evidence-and-faq.md) records results and remaining production gaps.
 
 ## Learning from this repository with an assistant
 

@@ -245,3 +245,46 @@ def test_customer_contact_does_not_leak_to_model_on_account_switch(erp_system):
     assert store.session(record["id"])["customer"] == "demo-customer-b"
     assert record["selected_order"] == "4901"
     assert all("ananya@example.com" not in m["content"] for m in store.session(record["id"])["history"])
+
+
+@pytest.mark.parametrize(
+    "estimate,phrase",
+    [("2026-11-12", "12 November"), (None, "don't have a delivery date")],
+)
+def test_quick_delivery_estimate_save_and_clear_notify_with_current_revision(
+    erp_system, estimate, phrase
+):
+    client, headers, store, workflow, hub = erp_system
+    channel = WhatsAppChannel(store, workflow, hub)
+    record = send(channel, channel.start(), "aarav@example.com")
+    record = send(channel, record, "4812")
+
+    class Socket:
+        def __init__(self):
+            self.events = []
+
+        async def send_json(self, event):
+            self.events.append(event)
+
+    socket = Socket()
+    hub.add(record["id"], socket)
+    response = client.patch(
+        "/api/studio/orders/4812",
+        headers=headers,
+        json={"carrier_eta_date": estimate, "revision": 1},
+    )
+    assert response.status_code == 200 and response.json()["order"]["revision"] == 2
+    update = next(e["message"] for e in socket.events if e["type"] == "message")
+    assert "Delivery estimate updated" in update["text"] and phrase in update["text"]
+    assert "₹" not in update["text"] and "9 November" not in update["text"]
+    stale = client.patch(
+        "/api/studio/orders/4812",
+        headers=headers,
+        json={"carrier_eta_date": "2026-11-15", "revision": 1},
+    )
+    assert (
+        stale.status_code == 409 and store.order("4812")["carrier_eta_date"] == estimate
+    )
+    record = send(channel, record, "When will it arrive?")
+    assert phrase in record["messages"][-1]["text"]
+    assert record["latest_trace"]["evidence"]["revision"] == 2

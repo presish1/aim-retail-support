@@ -1,8 +1,6 @@
 """Local classroom prototype. Simulated identity is deliberately not production auth."""
 import asyncio
 import secrets
-import uuid
-from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
@@ -12,13 +10,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from .model import ModelAdapter
-from .service import SourceError, Workflow, iso_now
+from .service import SourceError, Workflow
 from .store import ROOT, Store
 from .whatsapp import ChannelHub, WhatsAppChannel
 from . import erp, media
 
 
-app = FastAPI(title="Threadline synthetic support API", version="0.7.0")
+app = FastAPI(title="Threadline synthetic support API", version="0.8.0")
 store = Store()
 adapter = ModelAdapter()
 workflow = Workflow(store, adapter)

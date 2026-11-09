@@ -21,7 +21,9 @@ ALLOWED = {
 }
 
 
-def compile_reply(template, facts, required=(), guide_ids=(), available_guides=()):
+def compile_reply(
+    template, facts, required=(), guide_ids=(), available_guides=(), customer_text=""
+):
     if not isinstance(template, str) or not 15 <= len(template) <= 1600:
         return None, "No usable model reply"
     referenced = PLACEHOLDER.findall(template)
@@ -95,9 +97,20 @@ def compile_reply(template, facts, required=(), guide_ids=(), available_guides=(
         re.I,
     ):
         return None, "Unsupported causal explanation"
+    # Acknowledge a deadline the customer actually supplied without treating it as an ETA.
+    date_prose = prose
+    acknowledgement = re.compile(
+        r"\byou (?:need|want|were hoping to have) (?:it|this|(?:the |your )?(?:parcel|order|item|hoodie|shirt|tee|cardigan|jacket|chinos?|overshirt))\b[^.!?\n]{0,70}?\b(today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+        re.I,
+    )
+    for match in acknowledgement.finditer(prose):
+        if re.search(r"\b" + match[1] + r"\b", customer_text, re.I) and not re.search(
+            r"\b(?:will|arrive|deliver|guarantee)\b", match[0], re.I
+        ):
+            date_prose = date_prose.replace(match[0], "customer deadline")
     if re.search(
         r"\b(?:today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
-        prose,
+        date_prose,
         re.I,
     ):
         return None, "Unprotected relative date"

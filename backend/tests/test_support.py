@@ -274,7 +274,7 @@ def test_general_policy_uses_current_policy_and_provenance(support):
     record = send(ch, ch.start(), "What is your return policy?")
     assert "45 calendar days" in record["messages"][-1]["text"]
     trace = record["latest_trace"]
-    assert trace["retrieval"]["version"] == "threadline-support-v1"
+    assert trace["retrieval"]["version"] == "threadline-support-v2"
     assert trace["retrieval"]["used_chunk_ids"] == ["return_policy"]
 
 
@@ -534,3 +534,137 @@ def test_account_switch_does_not_pass_old_account_context_to_model(support):
     assert spy.seen
     assert not spy.seen[-1]["recent_messages"]
     assert "Aarav" not in json.dumps(spy.seen[-1])
+
+
+def test_conversational_offer_acceptance_saves_concern_without_another_model_call(
+    support,
+):
+    store, ch = support
+    record = account(support)
+
+    class Writer(Offline):
+        calls = 0
+
+        async def plan_support(self, *args):
+            self.calls += 1
+            return SupportPlan(
+                intent="order_status",
+                facets=["eta"],
+                opening="I understand the timing matters for your wedding.",
+                closing="Would you like me to ask the store to check the delivery?",
+                next_step="delivery_investigation",
+            ), {"input_tokens": 1, "output_tokens": 1}
+
+    writer = Writer()
+    ch.workflow.model = writer
+    record = send(ch, record, "Can the parcel reach me sooner for my wedding?", "model")
+    assert record["pending_offer"] and not store.records("tickets")
+    assert record["latest_trace"]["composition"]["model_written"]
+    record = send(ch, record, "That would be great", "model")
+    assert writer.calls == 1 and record["latest_trace"]["mode"] == "system"
+    assert (
+        len(store.records("tickets")) == 1
+        and "wedding" in store.records("tickets")[0]["request"]
+    )
+
+
+def test_declining_delivery_offer_clears_it_and_does_not_create_ticket(support):
+    store, ch = support
+    record = account(support)
+    record = send(ch, record, "My parcel is late")
+    assert record["pending_offer"]
+    record = send(ch, record, "No thanks", "model")
+    assert record["pending_offer"] is None and not store.records("tickets")
+    assert record["latest_trace"]["mode"] == "system"
+
+
+def test_rejected_generated_promise_cannot_leave_a_new_handoff_offer(support):
+    store, ch = support
+    record = account(support)
+
+    class Writer(Offline):
+        async def plan_support(self, *args):
+            return SupportPlan(
+                intent="order_status",
+                facets=["eta"],
+                opening="It will arrive tomorrow.",
+                next_step="delivery_investigation",
+            ), {"input_tokens": 1, "output_tokens": 1}
+
+    ch.workflow.model = Writer()
+    record = send(ch, record, "When should it arrive?", "model")
+    assert not record["latest_trace"]["composition"]["model_written"]
+    assert not record.get("pending_offer") and not store.records("tickets")
+
+
+@pytest.mark.parametrize(
+    "template,customer,accepted",
+    [
+        (
+            "I understand you need the hoodie for a wedding tomorrow.",
+            "My hoodie is late and I need it for a wedding tomorrow",
+            True,
+        ),
+        (
+            "I understand you need it for your wedding tomorrow.",
+            "I need it for my wedding tomorrow",
+            True,
+        ),
+        (
+            "I understand you need it for your wedding tomorrow.",
+            "I need it for a wedding",
+            False,
+        ),
+        (
+            "I understand you need it tomorrow. It will arrive tomorrow.",
+            "I need it tomorrow",
+            False,
+        ),
+        ("Your parcel will arrive tomorrow.", "I need it tomorrow", False),
+    ],
+)
+def test_customer_deadline_acknowledgement_does_not_authorize_delivery_promise(
+    template, customer, accepted
+):
+    result, error = compile_reply(template, {}, customer_text=customer)
+    assert bool(result) == accepted
+    assert bool(error) != accepted
+
+
+def test_natural_return_answer_gets_acknowledgement_and_exact_next_question(support):
+    _, ch = support
+    record = return_draft(support)
+
+    class Writer(Offline):
+        async def plan_support(self, *args):
+            return SupportPlan(
+                intent="return_answer",
+                opening="Thanks, that helps me understand the issue.",
+            ), {"input_tokens": 1, "output_tokens": 1}
+
+    ch.workflow.model = Writer()
+    record = send(ch, record, "The sleeves are too tight for me", "model")
+    assert (
+        record["return_draft"]["reason"] == "Size or fit"
+        and record["return_draft"]["step"] == "condition"
+    )
+    assert record["messages"][-1]["text"].startswith("Thanks, that helps")
+    assert "Has the item been worn or washed" in record["messages"][-1]["text"]
+
+
+@pytest.mark.parametrize(
+    "eta,expected",
+    [
+        ("2026-11-12", "12 November"),
+        ("2026-11-06", "date has passed"),
+        (None, "don't have a delivery date"),
+    ],
+)
+def test_delivery_estimate_is_concise_and_source_backed(support, eta, expected):
+    store, ch = support
+    record = account(support)
+    store.revise_order("4812", lambda order: {**order, "carrier_eta_date": eta})
+    record = send(ch, record, "When should it arrive?")
+    text = record["messages"][-1]["text"]
+    assert expected in text and "9 November" not in text
+    assert len(text) < 250

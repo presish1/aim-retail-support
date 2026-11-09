@@ -152,3 +152,14 @@ class LiveReads:
             raise SourceError("ORDER_CHANGED", "This order changed while I was reading it. Please refresh to get a consistent update.")
         self.log("get_payment", order_id)
         return {k: order[k] for k in ("payment_status", "order_total", "currency")}
+
+    def get_product_sizes(self, sku):
+        self.healthy()
+        sizes = self.store.product_sizes(sku)
+        self.log("get_product_sizes", sku)
+        if not sizes:
+            raise SourceError(
+                "PRODUCT_SIZES_UNAVAILABLE",
+                "I can't confirm the offered sizes for this item right now. The store can check it for you.",
+            )
+        return sizes
